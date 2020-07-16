@@ -1,0 +1,25 @@
+# Constructed from biom file
+# OTU ID	ERR2543096	taxonomy
+8460	1.0	sk__Archaea;k__;p__Euryarchaeota;c__Halobacteria
+103181	3.0	sk__Bacteria
+83222	8.0	sk__Bacteria;k__;p__Acidobacteria
+160258	1.0	sk__Bacteria;k__;p__Acidobacteria;c__Solibacteres;o__Solibacterales;f__Bryobacteraceae;g__Bryobacter
+219738	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria
+248615	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria;o__Streptosporangiales;f__Thermomonosporaceae
+231592	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Rubrobacteria
+78943	1.0	sk__Bacteria;k__;p__Chloroflexi
+198939	1.0	sk__Bacteria;k__;p__Chloroflexi;c__;o__;f__;g__;s__Chloroflexi_bacterium_OLB14
+55552	1.0	sk__Bacteria;k__;p__Chloroflexi;c__Anaerolineae;o__Anaerolineales;f__Anaerolineaceae
+197525	3.0	sk__Bacteria;k__;p__Chloroflexi;c__Dehalococcoidia
+29714	2.0	sk__Bacteria;k__;p__Chloroflexi;c__Thermomicrobia;o__Thermomicrobiales
+244444	2.0	sk__Bacteria;k__;p__Firmicutes;c__Clostridia;o__Clostridiales;f__Christensenellaceae
+53201	11.0	sk__Bacteria;k__;p__Gemmatimonadetes;c__Gemmatimonadetes;o__Gemmatimonadales;f__Gemmatimonadaceae
+69673	1.0	sk__Bacteria;k__;p__Nitrospirae;c__Nitrospira
+171064	2.0	sk__Bacteria;k__;p__Proteobacteria;c__Alphaproteobacteria
+57440	2.0	sk__Bacteria;k__;p__Proteobacteria;c__Alphaproteobacteria;o__Rhizobiales
+67192	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Alphaproteobacteria;o__Rhodospirillales;f__Rhodospirillaceae
+205282	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Betaproteobacteria;o__Nitrosomonadales;f__Nitrosomonadaceae
+61324	3.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria
+242853	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Oligoflexia;o__Oligoflexales
+65042	1.0	sk__Eukaryota;k__Metazoa
+264466	2.0	sk__Eukaryota;k__Metazoa;p__Nematoda;c__Enoplea

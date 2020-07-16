@@ -1,0 +1,16 @@
+# Constructed from biom file
+# OTU ID	ERR2543095	taxonomy
+103181	1.0	sk__Bacteria
+83222	5.0	sk__Bacteria;k__;p__Acidobacteria
+57104	1.0	sk__Bacteria;k__;p__Actinobacteria
+219738	3.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria
+59795	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria;o__Micromonosporales;f__Micromonosporaceae
+248615	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria;o__Streptosporangiales;f__Thermomonosporaceae
+77664	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria;o__Streptosporangiales;f__Thermomonosporaceae;g__Actinomadura
+84829	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Actinobacteria;o__Streptosporangiales;f__Thermomonosporaceae;g__Actinomadura;s__Actinomadura_citrea
+256813	1.0	sk__Bacteria;k__;p__Actinobacteria;c__Coriobacteriia;o__Coriobacteriales;f__Coriobacteriaceae;g__Collinsella
+78943	1.0	sk__Bacteria;k__;p__Chloroflexi
+53201	1.0	sk__Bacteria;k__;p__Gemmatimonadetes;c__Gemmatimonadetes;o__Gemmatimonadales;f__Gemmatimonadaceae
+142355	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Deltaproteobacteria
+200955	1.0	sk__Eukaryota;k__;p__;c__;o__Longamoebia;f__Acanthamoebidae;g__Comandonia
+108732	2.0	sk__Eukaryota;k__Metazoa;p__Chordata;c__Mammalia

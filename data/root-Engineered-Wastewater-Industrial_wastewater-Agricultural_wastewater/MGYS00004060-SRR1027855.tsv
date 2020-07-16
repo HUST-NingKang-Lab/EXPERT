@@ -1,0 +1,10 @@
+# Constructed from biom file
+# OTU ID	SRR1027855	taxonomy
+103181	9.0	sk__Bacteria
+198824	2.0	sk__Bacteria;k__;p__Candidatus_Omnitrophica;c__;o__;f__;g__Candidatus_Omnitrophus
+23528	5.0	sk__Bacteria;k__;p__Candidatus_Peregrinibacteria;c__Candidatus_Peribacteria
+28602	2.0	sk__Bacteria;k__;p__Planctomycetes
+21282	1.0	sk__Bacteria;k__;p__Proteobacteria
+61324	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria
+16188	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria;o__Enterobacterales
+252991	1.0	sk__Eukaryota;k__Fungi;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales;f__Saccharomycetaceae;g__Saccharomyces
