@@ -1,7 +1,7 @@
 from time import ctime
 
 # change package_name to your package name.
-from package_name.version import VERSION
+from src.version import VERSION
 
 
 def run():

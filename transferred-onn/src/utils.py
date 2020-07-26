@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate
+from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, Conv2D, MaxPooling2D
 import tensorflow as tf
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ from functools import reduce
 import re
 from collections import OrderedDict
 from livingTree import SuperTree
+from sklearn.ensemble import RandomForestRegressor
 
 
 def load_extractor(self, model_path, input_shape):
