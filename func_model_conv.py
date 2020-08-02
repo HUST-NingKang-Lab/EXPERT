@@ -11,8 +11,9 @@ import pandas as pd
 # npz_file = '/data2/public/chonghui/MGNify_12.5w/subset_Soil_matrices_1462_features_coef_0.001.npz'
 npz_file = '/data2/public/chonghui/MGNify_12.5w/matrices_1462_features_coef_0.001.npz'
 gpu = True
-split_idx = 23000
-end_idx = 25000
+split_idx = 45000
+end_idx = 50000
+
 
 gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
 cpus = tf.config.experimental.list_physical_devices(device_type='CPU')
@@ -62,147 +63,132 @@ def r_s(y_true, y_pred):
 	SS_tot = K.sum(K.square(y_true - K.mean(y_true))) 
 	return ( 1 - SS_res/(SS_tot + K.epsilon()) )
 
-x = tf.keras.Input(shape=(1462, 7))
-#print(x.shape)
 
-#fully connected layers using for extract underlying logic
-base = Conv1D(1024, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(x)
-base = BatchNormalization()(base)
-base = Conv1D(512, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-#base0_3 = Dense(base0_2, 1024, activation=tf.nn.relu)
-base = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-base = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-base = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-base = Conv1D(32, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-base = Conv1D(16, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-base = Conv1D(8, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-#base = Conv1D(256, kernel_size=1, use_bias=False)(base)
-base = Conv1D(2048, kernel_size=1462, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-base = Conv1D(1024, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-base = BatchNormalization()(base)
-
-l0 = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-l0 = BatchNormalization()(l0)
-l0_f = Flatten()(l0)
-l0 = Dense(32, activation=tf.nn.relu)(l0)
-l0 = BatchNormalization()(l0)
-l0_y = Dense(1, activation='sigmoid', use_bias=False, name='l0')(l0_f)
-
-#Ontology layer1 for label1 classifying
-#l1 = Dense(256, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(base)
-#l1 = BatchNormalization()(l1)
-l1 = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-l1 = BatchNormalization()(l1)
-l1 = Conv1D(64, kernel_size=1, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.012))(l1)
-l1 = BatchNormalization()(l1)
-l1_c = tf.concat([l0, l1], axis=2)
-l1_c = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(l1_c)
-l1_c = BatchNormalization()(l1_c)
-
-#Ontology layer2 for label2 classifying
-#l2 = Dense(256, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(base)
-#l2 = BatchNormalization()(l2)
-l2 = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-l2 = BatchNormalization()(l2)
-l2 = Conv1D(64, kernel_size=1, activation=tf.nn.relu)(l2)
-l2 = BatchNormalization()(l2)
-l2_c = tf.concat([l2, l1_c], axis=2)
-l2_c = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(l2_c)
-l2_c = BatchNormalization()(l2_c)
-
-#Ontology layer3 for label3 classifying
-#l3 = Dense(256, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(base)
-#l3 = BatchNormalization()(l3)
-l3 = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-l3 = BatchNormalization()(l3)
-l3 = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(l3)
-l3 = BatchNormalization()(l3)
-l3 = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(l3)
-l3 = BatchNormalization()(l3)
-l3_c = tf.concat([l3, l2_c], axis=2)
-l3_c = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(l3_c)
-l3_c = BatchNormalization()(l3_c)
-
-#Ontology layer4 for label4 classifying
-l4 = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(base)
-l4 = BatchNormalization()(l4)
-l4 = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-l4 = BatchNormalization()(l4)
-l4 = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(l4)
-l4 = BatchNormalization()(l4)
-l4_c = tf.concat([l4, l3_c], axis=2)
-#l4_c = Conv1D(256, kernel_size=1, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01), use_bias=False)(l4_c)
-#l4_c = BatchNormalization()(l4_c)
-l4_c = Conv1D(512, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(l4_c)
-l4_c = BatchNormalization()(l4_c)
-
-#Ontology layer5 for label5 classifying
-l5 = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l2(0.01))(base)
-l5 = BatchNormalization()(l5)
-l5 = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
-l5 = BatchNormalization()(l5)
-l5 = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(l5)
-l5 = BatchNormalization()(l5)
-l5_c = tf.concat([l5, l4_c], axis=2)
-l5_c = Conv1D(512, kernel_size=1, use_bias=False, activation=tf.nn.relu)(l5_c)
-l5_c = BatchNormalization()(l5_c)
-
-l1_c = Flatten()(l1_c)
-l1_c = Dense(32, activation=tf.nn.relu)(l1_c)
-l1_y = Dense(4, activation='sigmoid', name='l1_y')(l1_c)
+def layer_block_inter(tensor, out_units, layer):
+	# already flattened !!!!!!!
+	
+	filter_by_size = lambda x: x[ (x >= out_units * 4) & (x <= out_units * 32)][::-1]
+	num_units = filter_by_size(2 ** np.arange(11))
+	tmp = Dense(num_units[0], name=layer+'_dense_inter_0', activation=tf.nn.relu, use_bias=False, 
+				kernel_regularizer=tf.keras.regularizers.l2(0.012))(tensor)
+	tmp = BatchNormalization()(tmp)
+	for i, num_unit in enumerate(num_units[1:]):
+		tmp = Dense(num_unit, name=layer+'_dense_inter_'+str(i+1), activation=tf.nn.relu, use_bias=False)(tmp)
+		tmp = BatchNormalization()(tmp)
+	return tmp
 
 
-l2_c = Flatten()(l2_c)
-l2_c = Dense(64, activation=tf.nn.relu)(l2_c)
-l2_c = BatchNormalization()(l2_c)
-l2_y = Dense(7, activation='sigmoid', name='l2_y')(l2_c)
-
-l3_c = Flatten()(l3_c)
-l3_c = Dense(128, activation=tf.nn.relu)(l3_c)
-l3_c = BatchNormalization()(l3_c)
-l3_y = Dense(22, activation='sigmoid', name='l3_y')(l3_c)
-
-l4_c = Flatten()(l4_c)
-l4_c = Dense(256, activation=tf.nn.relu, use_bias=False)(l4_c)
-l4_c = BatchNormalization()(l4_c)
-l4_y = Dense(56, activation='sigmoid', name='l4_y')(l4_c)
-
-l5_c = Flatten()(l5_c)
-l5_c = Dense(256, use_bias=False, activation=tf.nn.relu)(l5_c)
-l5_c = BatchNormalization()(l5_c)
-l5_y = Dense(43, activation='sigmoid', name='l5_y')(l5_c)
-
-def scale_output(x):
-	total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
-	unknown_contrib = tf.subtract(total_contrib, tf.keras.backend.sum(x, keepdims=True, axis=1))
-	contrib = tf.keras.backend.relu(tf.keras.backend.concatenate( (x, unknown_contrib), axis=1))
-	scaled_contrib = tf.divide(contrib, tf.keras.backend.sum(contrib, keepdims=True, axis=1))
-	return scaled_contrib
+def layer_block_out(tensor, out_units, layer):
+	n_units = 2 ** np.arange(0, 11)[::-1]
+	n_units = n_units[(n_units > (4 * out_units)).sum() + 1]
+	tmp = Dense(n_units, name=layer+'_dense_out_0', activation=tf.nn.relu, use_bias=False)(tensor)
+	tmp = Dense(n_units, name=layer+'_dense_out_1', activation=tf.nn.relu, use_bias=False)(tmp)
+	tmp = Dense(out_units, name=layer+'_y', activation='sigmoid', use_bias=False)(tmp)
+	return tmp
 
 
-l1_y = Lambda(scale_output, name='l1')(l1_y)
-l2_y = Lambda(scale_output, name='l2')(l2_y)
-l3_y = Lambda(scale_output, name='l3')(l3_y)
-l4_y = Lambda(scale_output, name='l4')(l4_y)
-l5_y = Lambda(scale_output, name='l5')(l5_y)
+strategy = tf.distribute.MirroredStrategy()  
+with strategy.scope(): 
+#if True:
+	x = tf.keras.Input(shape=(1462, 7))
 
-model = tf.keras.Model(inputs=x, outputs=[l0_y, l1_y, l2_y, l3_y, l4_y, l5_y])
-model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4, clipvalue=5),
-			  loss={layer: tf.keras.losses.CategoricalCrossentropy(from_logits=False) 
-					for layer in ['l' + str(i) for i in range(6)]},
-			  #loss_weights={'l' + str(i): np.log(i + 2) / np.log(np.arange(2, 8)).sum() for i in range(6)},
-			  loss_weights={'l' + str(i): np.exp(i) / np.exp(np.arange(6)).sum()for i in range(6)},
-			  metrics=[Accuracy(), TruePositives(0.5), FalsePositives(0.5), TrueNegatives(0.5), FalseNegatives(0.5), AUC()])
+	base = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(x)
+	base = BatchNormalization()(base)
+	base = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	#base0_3 = Dense(base0_2, 1024, activation=tf.nn.relu)
+	base = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(512, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(512, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(256, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(128, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(64, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(32, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(16, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(8, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(4, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(1024, kernel_size=1462, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(1024, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
+	base = Conv1D(1024, kernel_size=1, use_bias=False, activation=tf.nn.relu)(base)
+	base = BatchNormalization()(base)
 
-history = model.fit(x=X[0:split_idx], y=[y[0:split_idx] for y in Y], epochs=150, batch_size=128, validation_split=0.1, verbose=1) 
+	root = Flatten()(base)
+	root = Dense(32, activation=tf.nn.relu, use_bias=False)(root)
+	root = BatchNormalization()(root)
+	root_y = Dense(1, activation='sigmoid', name='l0')(root)
+	
+	l1 = Flatten()(base)
+	l1 = tf.concat([root, l1], axis=1)
+	l1 = layer_block_inter(tensor=l1, layer='l1', out_units=4)
+	l1_copy = tf.identity(l1)
+	l1_y = layer_block_out(tensor=l1_copy, out_units=4, layer='l1')
+
+	l2 = Flatten()(base)
+	l2 = tf.concat([l2, l1], axis=1)
+	l2 = layer_block_inter(tensor=l2, layer='l2', out_units=7)
+	l2_copy = tf.identity(l2)
+	l2_y = layer_block_out(tensor=l2_copy, out_units=7, layer='l2')
+
+	l3 = Flatten()(base)
+	l3 = tf.concat([l3, l2], axis=1)
+	l3 = layer_block_inter(tensor=l3, layer='l3', out_units=22)
+	l3_copy = tf.identity(l3)
+	l3_y = layer_block_out(tensor=l3_copy, out_units=22, layer='l3')
+
+	l4 = Flatten()(base)
+	l4 = tf.concat([l4, l3], axis=1)
+	l4 = layer_block_inter(tensor=l4, layer='l4', out_units=56)
+	l4_copy = tf.identity(l4)
+	l4_y = layer_block_out(tensor=l4_copy, out_units=56, layer='l4')
+
+	l5 = Flatten()(base)
+	l5 = tf.concat([l5, l4], axis=1)
+	l5 = layer_block_inter(tensor=l5, layer='l5', out_units=43)
+	l5_copy = tf.identity(l5)
+	l5_y = layer_block_out(tensor=l5_copy, out_units=43, layer='l5')
+
+	def scale_output(x):
+		total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
+		unknown_contrib = tf.subtract(total_contrib, tf.keras.backend.sum(x, keepdims=True, axis=1))
+		contrib = tf.keras.backend.relu(tf.keras.backend.concatenate( (x, unknown_contrib), axis=1))
+		scaled_contrib = tf.divide(contrib, tf.keras.backend.sum(contrib, keepdims=True, axis=1))
+		return scaled_contrib
+
+
+	l1_y = Lambda(scale_output, name='l1')(l1_y)
+	l2_y = Lambda(scale_output, name='l2')(l2_y)
+	l3_y = Lambda(scale_output, name='l3')(l3_y)
+	l4_y = Lambda(scale_output, name='l4')(l4_y)
+	l5_y = Lambda(scale_output, name='l5')(l5_y)
+
+
+	model = tf.keras.Model(inputs=x, outputs=[root_y, l1_y, l2_y, l3_y, l4_y, l5_y])
+	model.compile(optimizer=tf.keras.optimizers.Adam(lr=5e-5), #, clipnorm=5), # how about mommentum? beta1 and beta 2?
+			  	  loss={layer: tf.keras.losses.CategoricalCrossentropy(from_logits=False) 
+				  for layer in ['l' + str(i) for i in range(6)]},
+			      #loss_weights={'l' + str(i): np.log(i + 2) / np.log(np.arange(2, 8)).sum() for i in range(6)},
+			  	  loss_weights={'l' + str(i): i / 21 for i in range(6)},
+			  	  metrics=[TruePositives(0.5, name='TP'), FalsePositives(0.5, name='FP'), TrueNegatives(0.5, name='TN'), 
+				  FalseNegatives(0.5, name='FN'), CategoricalAccuracy(name='acc'), AUC(curve='ROC', name='auROC'), 
+				  AUC(curve='PR', name='auPRC')])
+
+history = model.fit(x=X[0:split_idx], y=[y[0:split_idx] for y in Y], epochs=180, batch_size=128, validation_split=0.1, verbose=1) 
 # use sample_weight !!!!!!!!!!!!
 model.evaluate(x=X[split_idx:], y=[y[split_idx:] for y in Y], verbose=1)
 #res = model.predict(X[split_idx:])
