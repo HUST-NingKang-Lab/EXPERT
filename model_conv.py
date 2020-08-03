@@ -1,6 +1,6 @@
 #! /data2/public/chonghui_backup/anaconda3/bin/python
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, Conv1D, Lambda, Add
+from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, Conv1D, Lambda, Add, Activation
 from tensorflow.keras.metrics import *
 import numpy as np
 import os
@@ -56,117 +56,93 @@ for i in Y:
 	print(i.shape)
 layer_weights = [Y[0].shape[1], Y[1].shape[1], Y[2].shape[1], Y[3].shape[1], Y[4].shape[1], Y[5].shape[1]]
 
-def r_s(y_true, y_pred):
-	SS_res =  K.sum(K.square(y_true - y_pred)) 
-	SS_tot = K.sum(K.square(y_true - K.mean(y_true))) 
-	return ( 1 - SS_res/(SS_tot + K.epsilon()) )
-
-
 ln_init = tf.keras.initializers.GlorotUniform()
 
-def layer_block_inter(tensor, out_units, layer):
-	# already flattened !!!!!!!
-	
-	filter_by_size = lambda x: x[ (x > out_units * 8) & (x <= out_units * 32)][::-1]
-	num_units = filter_by_size(2 ** np.arange(11))
-	tmp = Dense(num_units[0], name=layer+'_dense_inter_0', activation='relu', 
-				use_bias=False, kernel_initializer=ln_init)(tensor)
-	#tmp = BatchNormalization()(tmp)
-	for i, num_unit in enumerate(num_units[1:]):
-		tmp = Dense(num_unit, name=layer+'_dense_inter_'+str(i+1), activation='relu', kernel_initializer=ln_init, 
-					use_bias=False)(tmp)
-	
-	tmp = BatchNormalization()(tmp)
-	return tmp
+class Model(tf.keras.Model):
 
+    def __init__(self):
+        super(Model, self).__init__()
+        self.base_blocks = self.init_base_block()
+        self.concat = tf.concat
+        self.copy = tf.identity
+        self.num_units = [1, 4, 7, 22, 56, 43]
+        self.inter_blocks = [self.init_kth_inter_block(k, self.num_units[k]) for k in range(6)]
+        self.out_blocks = [self.init_kth_out_block(k, self.num_units[k]) for k in range(6)]
+        self.postproc_layers = [self.init_kth_post_proc_layer(k) for k in range(6)]
 
-def layer_block_out(tensor, out_units, layer):
-	n_units = 2 ** np.arange(0, 11)[::-1]
-	n_units = n_units[(n_units > (4 * out_units)).sum() + 1]
-	tmp = Dense(n_units, name=layer+'_dense_out_0', activation='relu', kernel_initializer=ln_init, 
-				use_bias=False, kernel_regularizer='l2')(tensor)
-	#tmp = BatchNormalization()(tmp)
-	tmp = Dense(n_units, name=layer+'_dense_out_1', activation='relu', kernel_initializer=ln_init,
-				use_bias=False, kernel_regularizer='l2')(tmp)
-	tmp = BatchNormalization()(tmp)
-	tmp = Dense(out_units, name=layer+'_y', activation='sigmoid', use_bias=False)(tmp)
-	return tmp
+    def init_kth_inter_block(self, k: int, out_units):
+        filter_by_size = lambda x: x[ (x > out_units * 8) & (x <= out_units * 32)][::-1]
+        num_units = filter_by_size(2 ** np.arange(11))
+        # modify here
+        block = tf.keras.Sequential()
+        block.add(Dense(num_units[0], name='l'+str(k)+'_inter_dense_0', input_shape=(512,), use_bias=False, kernel_initializer=ln_init))
+        block.add(BatchNormalization())
+        block.add(Activation('relu'))
+        block.add(Dense(num_units[1], name='l'+str(k)+'_inter_dense_1', use_bias=False, kernel_initializer=ln_init))
+        block.add(BatchNormalization())
+        block.add(Activation('relu'))
+        return block
+
+    def init_kth_out_block(self, k: int, out_units):
+        n_units = 2 ** np.arange(0, 11)[::-1]
+        n_units = n_units[(n_units > (4 * out_units)).sum() + 1]
+        # modify here
+        block = tf.keras.Sequential()
+        block.add(Dense(n_units, name='l'+str(k)+'_out_dense_0', use_bias=False, kernel_initializer=ln_init,
+                kernel_regularizer='l2'))
+        block.add(BatchNormalization())
+        block.add(Activation('relu'))
+        block.add(Dense(n_units, name='l'+str(k)+'_out_dense_1', use_bias=False, kernel_initializer=ln_init,
+                kernel_regularizer='l2'))
+        block.add(BatchNormalization())
+        block.add(Activation('relu'))
+        block.add(Dense(n_units, name='l'+str(k)+'_out_dense_1', use_bias=False, kernel_initializer=ln_init,
+                kernel_regularizer='l2'))
+        block.add(BatchNormalization())
+        block.add(Activation('relu'))
+        block.add(Dense(out_units, name='l'+str(k), activation='sigmoid', use_bias=False))
+        return block
+
+    def init_base_block(self):
+        block = tf.keras.Sequential()
+        block.add(Conv1D(64, kernel_size=2, strides=1, padding='same', activation='relu', 
+                          kernel_initializer=ln_init, use_bias=False, input_shape=(1462, 7)))
+        block.add(Conv1D(64, kernel_size=2, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False))
+        block.add(Conv1D(128, kernel_size=3, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False))
+        block.add(Conv1D(128, kernel_size=3, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False))
+        block.add(Conv1D(256, kernel_size=2, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False))
+        block.add(Conv1D(256, kernel_size=4, strides=3, activation='relu', kernel_initializer=ln_init, use_bias=False))
+        block.add(Conv1D(512, kernel_size=2, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False))
+        block.add(Conv1D(512, kernel_size=3, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False,
+                          kernel_regularizer='l2'))
+        block.add(Conv1D(512, kernel_size=7, strides=1, use_bias=False, kernel_initializer=ln_init, kernel_regularizer='l2'))
+        block.add(BatchNormalization())
+        block.add(Activation('relu'))
+        block.add(Flatten())
+        return block
+
+    def init_kth_post_proc_layer(self, k):
+        def scale_output(x):
+            total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
+            unknown_contrib = tf.subtract(total_contrib, tf.keras.backend.sum(x, keepdims=True, axis=1))
+            contrib = tf.keras.backend.relu(tf.keras.backend.concatenate( (x, unknown_contrib), axis=1))
+            scaled_contrib = tf.divide(contrib, tf.keras.backend.sum(contrib, keepdims=True, axis=1))
+            return scaled_contrib
+        return Lambda(scale_output, name='l'+str(k)+'_y')
+
+    def call(self, input, training=False):
+        base = self.base_blocks(input, training=training)
+        inter_factors = [self.inter_blocks[i](base, training=training) for i in range(6)]
+        concat_factors = [self.concat(inter_factors[0:i], axis=1) for i in range(1, 7)]
+        y_s = [self.out_blocks[i](concat_factors[i], training=training) for i in range(6)]
+        (l0_y, l1_y, l2_y, l3_y, l4_y, l5_y) = (self.postproc_layers[i](y_s[i], training=training) for i in range(6))
+        return l0_y, l1_y, l2_y, l3_y, l4_y, l5_y
 
 
 strategy = tf.distribute.MirroredStrategy()  
 with strategy.scope(): 
 #if True:
-	x = tf.keras.Input(shape=(1462, 7))
-	base = Conv1D(64, kernel_size=2, strides=1, padding='same', activation='relu', kernel_initializer=ln_init, use_bias=False)(x)
-	#base = BatchNormalization()(base) # 1462
-	base = Conv1D(64, kernel_size=2, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False)(base)
-	#base = BatchNormalization()(base) # 731
-	base = Conv1D(128, kernel_size=3, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False)(base)
-	#base = BatchNormalization()(base) # 365
-	base = Conv1D(128, kernel_size=3, strides=2, activation='relu', kernel_initializer=ln_init, use_bias=False)(base)
-	#base = BatchNormalization()(base) # 182
-	base = Conv1D(256, kernel_size=2, strides=2, activation='relu', use_bias=False, kernel_initializer=ln_init)(base)
-	#base = BatchNormalization()(base) # 91
-	base = Conv1D(256, kernel_size=4, strides=3, activation='relu', use_bias=False, kernel_initializer=ln_init)(base)
-	#base = BatchNormalization()(base) # 30
-	base = Conv1D(512, kernel_size=2, strides=2, activation='relu', use_bias=False, kernel_initializer=ln_init)(base)
-	#base = BatchNormalization()(base) # 15
-	base = Conv1D(512, kernel_size=3, strides=2, activation='relu', use_bias=False, kernel_initializer=ln_init,
-				  kernel_regularizer='l2')(base)
-	#base = BatchNormalization()(base) # 7
-	base = Conv1D(512, kernel_size=7, strides=1, activation='relu', use_bias=False, kernel_initializer=ln_init,
-				  kernel_regularizer='l2')(base)
-	base = BatchNormalization()(base)
-
-	root = Flatten()(base)
-	root = Dense(32, activation='relu', kernel_initializer=ln_init, use_bias=False)(root)
-	root_y = Dense(1, activation='sigmoid', name='l0')(root)
-	
-	l1 = Flatten()(base)
-	l1 = tf.concat([root, l1], axis=1)
-	l1 = layer_block_inter(tensor=l1, layer='l1', out_units=4)
-	l1_copy = tf.identity(l1)
-	l1_y = layer_block_out(tensor=l1_copy, out_units=4, layer='l1')
-
-	l2 = Flatten()(base)
-	l2 = tf.concat([l2, l1], axis=1)
-	l2 = layer_block_inter(tensor=l2, layer='l2', out_units=7)
-	l2_copy = tf.identity(l2)
-	l2_y = layer_block_out(tensor=l2_copy, out_units=7, layer='l2')
-
-	l3 = Flatten()(base)
-	l3 = tf.concat([l3, l2], axis=1)
-	l3 = layer_block_inter(tensor=l3, layer='l3', out_units=22)
-	l3_copy = tf.identity(l3)
-	l3_y = layer_block_out(tensor=l3_copy, out_units=22, layer='l3')
-
-	l4 = Flatten()(base)
-	l4 = tf.concat([l4, l3], axis=1)
-	l4 = layer_block_inter(tensor=l4, layer='l4', out_units=56)
-	l4_copy = tf.identity(l4)
-	l4_y = layer_block_out(tensor=l4_copy, out_units=56, layer='l4')
-
-	l5 = Flatten()(base)
-	l5 = tf.concat([l5, l4], axis=1)
-	l5 = layer_block_inter(tensor=l5, layer='l5', out_units=43)
-	l5_copy = tf.identity(l5)
-	l5_y = layer_block_out(tensor=l5_copy, out_units=43, layer='l5')
-
-	def scale_output(x):
-		total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
-		unknown_contrib = tf.subtract(total_contrib, tf.keras.backend.sum(x, keepdims=True, axis=1))
-		contrib = tf.keras.backend.relu(tf.keras.backend.concatenate( (x, unknown_contrib), axis=1))
-		scaled_contrib = tf.divide(contrib, tf.keras.backend.sum(contrib, keepdims=True, axis=1))
-		return scaled_contrib
-
-
-	l1_y = Lambda(scale_output, name='l1')(l1_y)
-	l2_y = Lambda(scale_output, name='l2')(l2_y)
-	l3_y = Lambda(scale_output, name='l3')(l3_y)
-	l4_y = Lambda(scale_output, name='l4')(l4_y)
-	l5_y = Lambda(scale_output, name='l5')(l5_y)
-
-	model = tf.keras.Model(inputs=x, outputs=[root_y, l1_y, l2_y, l3_y, l4_y, l5_y])
+	model = Model()
 	model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-5), #, clipnorm=5), # how about mommentum? beta1 and beta 2?
 			  	  loss={layer: tf.keras.losses.CategoricalCrossentropy() if layer != 'l0' else tf.keras.losses.BinaryCrossentropy()
 				  for layer in ['l' + str(i) for i in range(6)]},
