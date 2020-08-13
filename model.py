@@ -14,9 +14,7 @@ npz_file = '/data2/public/chonghui/MGNify_12.5w/matrices_1462_features_coef_0.00
 gpu = True
 split_idx = 102400
 end_idx = 125823
-np.random.seed(0)
-lr = 
-m = 
+np.random.seed(1)
 
 
 gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
@@ -59,7 +57,7 @@ for i in Y:
 	print(i.shape)
 layer_weights = [Y[0].shape[1], Y[1].shape[1], Y[2].shape[1], Y[3].shape[1], Y[4].shape[1], Y[5].shape[1]]
 
-ln_init = tf.keras.initializers.HeNormal(seed=0)
+ln_init = tf.keras.initializers.HeNormal(seed=1)
 
 class Model(tf.keras.Model):
 
@@ -118,7 +116,7 @@ class Model(tf.keras.Model):
 			block = tf.keras.Sequential(name='base_bn_relu_block_'+k[-1])
 		else:
 			block = tf.keras.Sequential(name=str(k)+'th_bn_relu_block')
-		block.add(BatchNormalization(momentum=0.9))
+		block.add(BatchNormalization(momentum=0.95))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
 		return block
@@ -189,33 +187,37 @@ class Model(tf.keras.Model):
 		return l0_y, l1_y, l2_y, l3_y, l4_y, l5_y
 
 
-print('lr: {}, momentum: {}'.format(lr, m))
-strategy = tf.distribute.MirroredStrategy()  
-with strategy.scope(): 
-#if True:
-	model = Model()
-	model.compile(optimizer=tf.keras.optimizers.SGD(lr=lr, momentum=m, nesterov=True), # how about mommentum? beta1 and beta 2?
-				  loss=tf.keras.losses.CategoricalCrossentropy(),
-				  loss_weights={'output_' + str(i+1): layer_weights[i] for i in range(6)},
-				  #loss_weights={'output_' + str(i+1): layer_weights[i] / sum(layer_weights) for i in range(6)},
-				  metrics=[#TruePositives(0.5, name='TP'), FalsePositives(0.5, name='FP'), TrueNegatives(0.5, name='TN'), 
-						   #FalseNegatives(0.5, name='FN'), 
-						   'acc'])
+for i in range(80):
+	lr = np.random.randint(1, 9) * 10 ** (np.random.randint(-4, -1))
+	m = 0.75 + np.round(np.random.uniform(-1, 1, 1)[0] / 4, 2)
+	print('lr: {}, momentum: {}'.format(lr, m))
+	strategy = tf.distribute.MirroredStrategy()  
+	with strategy.scope(): 
+	#if True:
+		model = Model()
+		model.compile(optimizer=tf.keras.optimizers.SGD(lr=lr, momentum=m, nesterov=True), # how about mommentum? beta1 and beta 2?
+					  loss=tf.keras.losses.CategoricalCrossentropy(),
+					  loss_weights={'output_' + str(i+1): layer_weights[i] for i in range(6)},
+					  #loss_weights={'output_' + str(i+1): layer_weights[i] / sum(layer_weights) for i in range(6)},
+					  metrics=[#TruePositives(0.5, name='TP'), FalsePositives(0.5, name='FP'), TrueNegatives(0.5, name='TN'), 
+							   #FalseNegatives(0.5, name='FN'), 
+							   'acc'])
 
-early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=40, verbose=2, restore_best_weights=True)
-history = '/data2/public/chonghui_backup/training_history_by_csv_logger.csv'
-csv_logger = tf.keras.callbacks.CSVLogger(history, separator=',', append=False)
-
-history = model.fit(x=X[0:512], y=[y[0:512] for y in Y], epochs=1, batch_size=512,# shuffle=False, 
-					validation_data=(X[split_idx:], [y[split_idx:] for y in Y]), verbose=1) 
-	# use sample_weight !!!!!!!!!!!!
-model.summary()
-	
-model.fit(x=X[0:split_idx], y=[y[0:split_idx] for y in Y], epochs=500, batch_size=512, #shuffle=False, 
-						callbacks=[csv_logger, early_stopping], validation_data=(X[split_idx:], [y[split_idx:] for y in Y]))
+	#early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=40, verbose=2, restore_best_weights=True)
+	lr_reducer = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=4, min_lr=1e-8, cooldown=1, verbose=1)
+	history = '/data2/public/chonghui_backup/hyperparameter_tunning/SGD_lr_{}_momentum_{}.csv'.format(lr, m)
+	csv_logger = tf.keras.callbacks.CSVLogger(history, separator=',', append=False)
+	'''
+	history = model.fit(x=X[0:512], y=[y[0:512] for y in Y], epochs=1, batch_size=512,# shuffle=False, 
+						validation_data=(X[split_idx:], [y[split_idx:] for y in Y]), verbose=1) 
+		# use sample_weight !!!!!!!!!!!!
+	model.summary()
+	'''
+	model.fit(x=X[0:split_idx], y=[y[0:split_idx] for y in Y], epochs=40, batch_size=512, #shuffle=False, 
+						callbacks=[csv_logger, lr_reducer], validation_data=(X[split_idx:], [y[split_idx:] for y in Y]))
 
 #res = model.predict(X[split_idx:])
-model.save('/data2/public/chonghui_backup/onn_model_8.6_tunning', save_format='tf')
+#model.save('/data2/public/chonghui_backup/onn_model_8.2_tunning', save_format='tf')
 #pd.DataFrame(history.history).to_csv('/data2/public/chonghui_backup/training_history_tunning.csv')
 #np.savez('/data2/public/chonghui_backup/prediction', list(res))
 #np.savez('/data2/public/chonghui_backup/truth', t)
