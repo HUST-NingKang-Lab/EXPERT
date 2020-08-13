@@ -15,4 +15,5 @@ def construct(args):
 	otlg.from_paths(paths=paths)
 	if args.show:
 		otlg.show()
+	print('Done')
 	otlg.to_pickle(args.o)

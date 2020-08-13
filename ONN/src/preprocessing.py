@@ -18,7 +18,7 @@ class Transformer(object):
 		self.db_tool = NCBITaxa(db_file=db_file)
 		self.phylogeny = phylogeny
 
-	def _extract_layers(self, count_matrix, included_ranks=None):
+	def _extract_layers(self, count_matrix, included_ranks=None, verbose=0):
 		"""
 		Step 1: Dealing with entries not in db
 		Step 2: Track lineage for each taxonomy and join with count matrix
@@ -35,15 +35,18 @@ class Transformer(object):
 		taxas = pd.Series(count_matrix.index.to_list(), index=count_matrix.index)
 		sks = taxas.apply(lambda x: x.split(';')[0].split('__')[1])
 		sk_indb = self.db_tool.entries_in_db(sks)
-		print('There will be {}/{} entries droped cause they are not '
-			  'in NCBI taxanomy database'.format((~sk_indb).sum(), sk_indb.shape[0]))
-		print(sks[~sk_indb])
+		if verbose > 0:
+			print('There will be {}/{} entries droped cause they are not '
+				  'in NCBI taxanomy database'.format((~sk_indb).sum(), sk_indb.shape[0]))
+			print(sks[~sk_indb])
 
 		# Change index for boolean indeces
 		sk_indb.index = count_matrix.index
 		cm_keep = count_matrix[sk_indb]
 
 		# Extract layers for entries data
+		if verbose > 0:
+			print('Extracting lineages for taxonomic entries, this may take a few minutes')
 		multi_entries = pd.Series(cm_keep.index.to_list(), index=cm_keep.index.to_list())
 		lineages = self._track_lineages(multi_entries=multi_entries)
 
@@ -55,6 +58,8 @@ class Transformer(object):
 		lineages = lineages.apply(add_prefix, axis=0).apply(str_cumsum, axis=1)
 
 		# Fill samples in phylogeny dataframe
+		if verbose > 0:
+			print('Filling samples in phylogeny matrix')
 		sampleids = cm_keep.columns.tolist()
 		fill_in_phylogeny = lambda x: pd.merge(left=self.phylogeny[[x]].copy(),
 			right=cm_with_lngs.groupby(by=x, as_index=False).sum(), on=[x], how='left',
@@ -62,14 +67,16 @@ class Transformer(object):
 		cm_with_lngs = cm_keep.join(lineages)
 
 		if self.phylogeny is not None:
-			print('Generating matrix at different rank')
+			if verbose > 0:
+				print('Generating matrix for each rank')
 			# join by index
 			matrix_by_rank = OrderedDict( zip(included_ranks, map(fill_in_phylogeny, tqdm(included_ranks)) ))
 			# key -> ranks, index -> taxonomies, column name -> sample ids
 			return matrix_by_rank
 		else:
-			print('No default phylogeny tree provided, '
-				  'use all lineages data involved automatically.')
+			if verbose > 0:
+				print('No default phylogeny tree provided, '
+					  'use all lineages data involved automatically.')
 			self._updata_phylo(lineages)
 			matrix_genus = fill_in_phylogeny('genus')
 			return matrix_genus

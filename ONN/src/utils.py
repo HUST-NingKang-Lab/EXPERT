@@ -4,7 +4,7 @@ import argparse
 from functools import reduce
 from livingTree import SuperTree
 import os
-
+from tqdm import tqdm
 
 def load_extractor(self, model_path, input_shape):
 	if model_path == None:
@@ -42,7 +42,7 @@ def map_to_ontology(mapper, otlg, unk):
 						  index=mapper['SampleID'])
 	#labels_by_level = {level: pd.DataFrame([], columns=ids) for level, ids in ids_by_level.items()}
 	labels_by_level = {}
-	for level, labels in ids_by_level.items():
+	for level, labels in tqdm(ids_by_level.items()):
 		labels_arr = labels.to_numpy()
 		labels_rowv = labels_arr.reshape(1, labels_arr.shape[0])
 		env_colv = layers[level].to_numpy().reshape(layers.shape[0], 1)
