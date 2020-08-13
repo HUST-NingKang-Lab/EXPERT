@@ -33,6 +33,8 @@ class Transformer(object):
 
 		# Filter, taxonomies with sk in db are kept.
 		taxas = pd.Series(count_matrix.index.to_list(), index=count_matrix.index)
+		#with open(self.get_conf_savepath('taxas.txt'), 'w') as f:
+			#f.write('\n'.join(taxas))
 		sks = taxas.apply(lambda x: x.split(';')[0].split('__')[1])
 		sk_indb = self.db_tool.entries_in_db(sks)
 		if verbose > 0:
