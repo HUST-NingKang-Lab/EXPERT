@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/CLI/env bash
 
 rm dist/*
 python setup.py sdist bdist_wheel

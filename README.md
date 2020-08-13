@@ -1,70 +1,71 @@
-# Python Package Template
+# Generalized Ontology-aware Neural Network
 
-📦 一个快速搭建 Python Package 的模版。
+Generalized ontology-aware neural network for ontological data mining.
 
-## 使用方法
+## Deployment
 
-1. 点击本项目右上角的绿色按钮 `Use this template`（使用此模板），输入名称和说明，完成创建；
-
-2. 将项目克隆到本地，这里以本项目为例，实际操作时这里需要替换你自己的项目；
-
-    ```bash
-    git clone https://github.com/HaveTwoBrush/python-package-template.git --depth 1
-    ```
-
-3. 修改配置，文件中有提示；
-
-    ```bash
-    cd python-package-template
-   
-    # 1. 将下文中的 your_package_name 改成你的实际项目名称
-    mv package_name your_package_name
-   
-    # 2. 接下来修改 `setup.py /package_name/shell/usage.py`中的参数，里面有提示。
-    
-    # 3. 最后 `README.md` 修改为你的项目介绍，也就是你当前在读的这个文本。
-    ```
-
-4. 编写你的 Package 代码；
-
-5. 上传到 PyPi（需要注册），参考[如何发布自己的包到 pypi](https://www.v2ai.cn/python/2018/07/30/PY-1.html)
-；
-
-    ```bash
-    bash upload_pypi.sh
-    ```
-
-6. 更新到 Github。
-
-    ```bash
-    git push
-    ```
-
-## 项目结构
-
-```
-.
-├── package_name # 你需要手动修改为你的项目名称
-│   ├── shell # 在命令行中执行的代码
-│   │   ├── __init__.py
-│   │   └── usage.py
-│   ├── src # 静态资源
-│   │   └── temp.txt
-│   └── version.py # 版本号
-├── setup.py # 安装配置
-├── requirements.txt # 包依赖
-├── requirements_dev.txt # 开发依赖
-├── README.md # 项目文档
-├── LICENSE # 这里面的内容为本项目的 License，你需要手动替换它。
-├── .gitignore
-└── upload_pypi.sh # 上传到 PyPi 的工具
+```shell script
+pip install GONN
 ```
 
-## 许可
+## Usage
+
+## Demo
+
+Change working directory.
+
+```shell script
+cd others
+```
+
+Getting a list of input files.
+
+```shell script
+ls ../data/*/*  > tmp/sample-list.txt
+```
+
+Constructing microbiome ontology using microbiomes.txt.
+
+```shell script
+ONN construct -i tmp/microbiomes.txt -o tmp/ontology.pkl
+```
+
+Getting mapper file from top level directory of well-organized data.
+
+```shell script
+ONN map -from-dir -i ../data/ -o tmp/mapper.csv
+```
+
+Mapping their source environments to microbiome ontology. Getting Hierarchical labels of all samples. 
+
+```shell script
+ONN map -to-otlg -otlg tmp/ontology.pkl -i tmp/mapper.csv -o tmp/out/labels.h5 -unk
+```
+
+Converting input data to a count matrix at genus level and generating phylogeny using the taxonomic entries data, Prepare for selecting top n important entries.
+
+```shell script
+ONN convert -gen-phylo -i tmp/sample-list.txt -conf tmp/conf -o tmp/out/countmatrix_genus.h5 -db ~/.etetoolkit/taxa.sqlite
+```
+
+Selecting top 1000 important phylogeny.
+
+```shell script
+ONN select -i tmp/conf/phylogeny_by_transformer.csv -cm tmp/out/countmatrix_genus.h5 -o tmp/conf/phylogeny_top1000.csv -top 1000 -labels tmp/out/labels.h5 -dmax 5
+```
+
+Converting input data to count matrix at each rank in [sk, p, c, o, f, g].
+
+
+```shell script
+ONN convert -i tmp/sample-list.txt -conf tmp/conf -o tmp/out/countmatrix_each_rank.h5 -db ~/.etetoolkit/taxa.sqlite -phylo tmp/conf/phylogeny_top1000.csv
+```
+
+## License
 
 [![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
 
-## 参考
+## Reference
 
 - [如何从模板创建仓库？](https://help.github.com/cn/articles/creating-a-repository-from-a-template)
 - [如何发布自己的包到 pypi ？](https://www.v2ai.cn/python/2018/07/30/PY-1.html)

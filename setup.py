@@ -2,9 +2,9 @@ from setuptools import setup
 from setuptools import find_packages
 
 # change this.
-NAME = "your package name"
-AUTHOR = "your name"
-EMAIL = "your mail"
+NAME = "ONN"
+AUTHOR = "Hui Chong"
+EMAIL = "huichong.me@gmail.com"
 URL = "your project url"
 LICENSE = "your license"
 DESCRIPTION = "your project description"
@@ -19,6 +19,7 @@ if __name__ == "__main__":
         license=LICENSE,
         description=DESCRIPTION,
         packages=find_packages(),
+        package_dir={'ONN': 'ONN'},
         include_package_data=True,
         install_requires=open("./requirements.txt", "r").read().splitlines(),
         long_description=open("./README.md", "r").read(),
@@ -26,14 +27,14 @@ if __name__ == "__main__":
         # change package_name to your package name.
         entry_points={
             "console_scripts": [
-                "package_name=package_name.shell:run"
+                "ONN=ONN.CLI:main"
             ]
         },
         package_data={
             # change package_name to your package name.
-            "package_name": ["src/*.txt"]
+            "ONN": ["./data"]
         },
-        zip_safe=True,
+        zip_safe=False,
         classifiers=[
             "Programming Language :: Python :: 3",
             # change $license to your license.
