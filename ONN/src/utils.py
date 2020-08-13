@@ -6,7 +6,8 @@ from livingTree import SuperTree
 import os
 from tqdm import tqdm
 
-def load_extractor(self, model_path, input_shape):
+
+def load_extractor(model_path, input_shape):
 	if model_path == None:
 		model_path = 'transferred-onn/explore-NB/MNIST/feature-vector/'
 	model = hub.KerasLayer(model_path, input_shape=input_shape)
@@ -16,13 +17,15 @@ def str_sum(iterable):
 	return reduce(lambda x, y: x + y, iterable)
 
 def samples_to_countmatrix(tsvs):
-	keep_tax_abu = lambda x: x[x.columns[1:3]].groupby(by='taxonomy').sum()
+	keep_tax_abu = lambda x: x.loc[x['taxonomy'].str.contains('k__'),
+								   x.columns[1:3]].groupby(by='taxonomy').sum()
 	tsvs_keep = map(keep_tax_abu, tsvs)
 	#matrix = reduce(lambda x, y: pd.merge(left=x, right=y, on='taxonomy', how='outer'), tsvs_keep)
-	matrix = pd.concat(tsvs_keep, axis=1, join='outer')
+	matrix = pd.concat(tsvs_keep, axis=1, join='outer') # add progress bar
 	return matrix.fillna(0)
 
 def merge_countmatrices(sub_matrices):
+	clean = lambda x: x.loc[x.index.to_series().str.contains('k__'), :]
 	matrix = reduce(lambda x, y: pd.merge(left=x, right=y, left_index=True, right_index=True, how='outer'),
 					sub_matrices)
 	return matrix.fillna(0)

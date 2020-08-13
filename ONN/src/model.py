@@ -1,132 +1,150 @@
-from .utils import Parser
-from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, Conv2D, MaxPooling2D
+import os
+from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, \
+	Conv2D, Activation, Lambda
 import tensorflow as tf
 from collections import OrderedDict
 import numpy as np
 
-parser = Parser()
 
+he_normal = tf.keras.initializers.HeNormal(seed=0)
+
+# transfer: load saved model, build new model from scratch, new model.base = saved model.base
 
 class Model(tf.keras.Model):
 
-	def __init__(self, phylogeny, ontology, extractor, fine_tune=False):
+	def __init__(self, layer_units=None, restore_from=None):
 		"""
-		stacked_network=False: Independent feature extraction and source contribution calculation.
-		stacked_network=True:  Stack feature extractor and predictor together.
 		:param phylogeny:
 		:param ontology:
 		:param extractor:
 		"""
 		# init Keras Model
 		super(Model, self).__init__()
+		if layer_units:
+			self.n_layers = len(layer_units)
+			self.base = self.init_base_block()
+			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer))
+							   for layer in range(self.n_layers)]
+			self.spec_outputs = [self.init_output_block(index=layer, name='l{}_output'.format(layer),
+														n_units=n_units)
+								 for layer, n_units in enumerate(layer_units)]
+		elif restore_from:
+			self.__restore_from(restore_from)
+			self.n_layers = len(self.spec_outputs)
+		else:
+			raise ValueError('Please given correct model path to restore, '
+							 'or specify layer_units to build model from scratch.')
+		self.concat = Concatenate(axis=1)
+		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer))
+							   for layer in range(self.n_layers)]
 
-		self.phylogeny = phylogeny
-		self.ontology = ontology
-		self.do_fine_tune = fine_tune
-		if self.do_fine_tune:
-			extractor.trainable = False
+	def init_base_block(self):
+		block = tf.keras.Sequential(name='base')
+		block.add(Conv2D(32, kernel_size=(1, 3), kernel_initializer=he_normal, input_shape=(1000, 6, 1)))
+		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
+		block.add(Conv2D(32, kernel_size=(1, 2), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
+		block.add(Conv2D(64, kernel_size=(1, 2), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (1000, 2, 64) -> 128000
+		block.add(Conv2D(64, kernel_size=(1, 2), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (1000, 1, 64) -> 64000
+		block.add(Conv2D(128, kernel_size=(10, 1), strides=(5, 1), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (198, 1, 128) -> 25344
+		block.add(Conv2D(128, kernel_size=(6, 1), strides=(3, 1), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (65, 1, 128) -> 8320
+		block.add(Conv2D(256, kernel_size=(5, 1), strides=(5, 1), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (13, 1, 256) -> 3328
+		block.add(Conv2D(256, kernel_size=(5, 1), strides=(2, 1), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (5, 1, 256) -> 1280
+		block.add(Conv2D(512, kernel_size=(5, 1), kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (1, 1, 512) -> 512
+		block.add(Flatten()) # (512, )
+		block.add(Dense(512, kernel_initializer=he_normal))
+		block.add(Activation('relu')) # (512, )
+		return block
 
-		self.input_shape_ = phylogeny.shape
-		(self.output_labels, self.output_shapes) = parser.parse_ontology(ontology) # walk through ontology?
-		self.layer_keys = list(self.output_shapes.keys())
+	def init_inter_block(self, index, name):
+		k = index
+		block = tf.keras.Sequential(name=name)
+		block.add(Dense(256, name='l' + str(k) + '_inter_fc0', input_shape=(512, ),
+						kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		block.add(Dense(256, name='l' + str(k) + '_inter_fc1', kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		block.add(Dense(128, name='l' + str(k) + '_inter_fc2', kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		block.add(Dense(128, name='l' + str(k) + '_inter_fc3', kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		return block
 
-		# generate neural network
-		self.ftr_extrctor = extractor
-		self.concat_layer = Concatenate(axis=1)
-		self.otlg_walker = OrderedDict([])
-		self._add_out_layers() # Ordered_dict
+	def init_output_block(self, index, name, n_units):
+		input_shape = (128 * (index + 1), )
+		block = tf.keras.Sequential(name=name)
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc0',
+						kernel_initializer=he_normal, input_shape=input_shape))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc1',
+						kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		block.add(Dropout(0.7))
+		block.add(Dense(n_units, name='l' + str(index), use_bias=True))
+		return block
+
+	def init_post_proc_layer(self, name):
+		def scale_output(x):
+			total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
+			unknown_contrib = tf.subtract(total_contrib, tf.keras.backend.sum(x, keepdims=True, axis=1))
+			contrib = tf.keras.backend.relu(tf.keras.backend.concatenate((x, unknown_contrib), axis=1))
+			scaled_contrib = tf.divide(contrib, tf.keras.backend.sum(contrib, keepdims=True, axis=1))
+			return scaled_contrib
+		return Lambda(scale_output, name=name)
+
+	def _init_bn_layer(self):
+		return BatchNormalization(momentum=0.99)
 
 	def call(self, inputs, training=False):
-		# store outputs
-		outs = OrderedDict()
-		ftrs = self.ftr_extrctor(inputs, training=training)
-		for index, nnlayer in enumerate(self.otlg_walker.keys()):
-			X = ftrs.copy()
-			if index == 0:
-				for key, layer in self.otlg_walker[nnlayer].items():
-					if key.startswith('batchnorm'):
-						X = layer(X, training=training)
-					else:
-						X = layer(X)
-			else:
-				for key, layer in self.otlg_walker[nnlayer].items():
-					if key.startswith('batchnorm'):
-						X = layer(X, training=training)
-					elif key == 'dense1':
-						'''output of dense1 -> Concatenation <- output of last layer of ONN
-												      |-> dense'''
-						X = layer(X)
-						lastout = layer(outs[index - 1])
-						X = self.concat_layer([lastout, X])
-					else:
-						X = layer(X)
-			outs[index] = X
-		concat_outs = tf.concat(list(outs.values()), axis=0)
-		return concat_outs
-
-	def _add_out_layers(self):
-		"""
-		For layer 0: features -> dense1 -> flatten -> dense2(out)
-		For other layers: features -> Batchnorm -> dense1 -> concat <- dense1 <- output of last layer
-															   |-> dense2 -> flatten -> dense3(out)
-		nnlayer: each layer of output layers of the entire NN
-		key: name for each layer in each nested out layers
-		layer: each layer in each nested out layers
-		:return:
-		"""
-		example = {1: (4, 1),
-				   2: (10, 1)}   # Ordered dict
-		for index, (nnlayer, shape) in enumerate(self.output_shapes.items()):
-			self.otlg_walker[nnlayer] = OrderedDict()
-			NL = shape[0]    # nlabel
-			if index == 0:
-				self.otlg_walker[nnlayer]['batchnorm'] = BatchNormalization()
-				self.otlg_walker[nnlayer]['dense1'] = Dense(self._get_n_units(NL * 2), activation='relu')
-				self.otlg_walker[nnlayer]['flatten'] = Flatten()
-				self.otlg_walker[nnlayer]['dense2'] = Dense(NL, activation='softmax')
-			else:
-				self.otlg_walker[nnlayer]['batchnorm'] = BatchNormalization()
-				self.otlg_walker[nnlayer]['dense1'] = Dense(self._get_n_units(NL * 4), activation='relu')
-				'''output of dense1 -> Concatenation <- output of last layer of ONN
-				             				|-> dense'''
-				self.otlg_walker[nnlayer]['dense2'] = Dense(self._get_n_units(NL * 2), activation='relu')
-				self.otlg_walker[nnlayer]['flatten'] = Flatten()
-				self.otlg_walker[nnlayer]['dense3'] = Dense(NL, activation='softmax')
+		base = self.base(inputs)
+		inter_logits = [self.spec_inters[i](base) for i in range(self.n_layers)]
+		concat_logits = inter_logits[0:1] + [self.concat(inter_logits[0:i])
+											 for i in range(2, self.n_layers + 1)]
+		out_logits = [self.spec_outputs[i](concat_logits[i]) for i in range(self.n_layers)]
+		outputs = (self.spec_postprocs[i](out_logits[i]) for i in range(self.n_layers))
+		return outputs
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
-		suupported_range = 2**np.arange(1, 11)
-		return suupported_range[(suupported_range < num).sum()]
+		supported_range = 2**np.arange(1, 11)
+		return supported_range[(supported_range < num).sum()]
 
-	def predict_source(self, X, cal_contribution=True, threshold=0, top_n=0):
-		"""
-		Predict source or source contribution of input X.
-		:param X:
-		:param cal_contribution:
-		:param threshold:
-		:param top_n:
-		:return:
-		"""
-		if cal_contribution and (threshold != 0 or top_n != 0):
-			assert RuntimeWarning('Cannot apply threshold and top_n when calculating source contribution.')
-		else:
-			pass
+	def save_base_model(self, path):
+		self.base.save(path, save_format='tf')
 
-		if self.stacked_network and cal_contribution:
-			source_contributions = self.predictor.predict(X)
-		elif self.stacked_network and not cal_contribution:
-			source_contributions = self.predictor.predict(X)
-			return self._post_processing(source_contributions, threshold, top_n)
-		elif cal_contribution and not self.stacked_network:
-			features = self._extract_features(X)
-			source_contributions = self.predictor.predict(features)
-		else: # not cal contribution and not stacked network
-			features = self._extract_features(X)
-			source_contributions = self.predictor.predict(features)
-			return self._post_processing(source_contributions, threshold, top_n)
-		return source_contributions
+	def save_blocks(self, path):
+		inters_dir = self.__pthjoin(path, 'inters')
+		outputs_dir = self.__pthjoin(path, 'outputs')
+		for dir in [path, inters_dir, outputs_dir]:
+			if not os.path.isdir(dir):
+				os.mkdir(dir)
+		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
+		for layer in range(self.n_layers):
+			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
+			self.spec_outputs[layer].save(self.__pthjoin(outputs_dir, str(layer)), save_format='tf')
 
-	def _post_processing(self, source_contribution, threshold=0, top_n=0):
-		# apply softmax
-		source_contribution
-		return source_contribution
+	def __restore_from(self, path):
+		base_dir = self.__pthjoin(path, 'base')
+		inters_dir = self.__pthjoin(path, 'inters')
+		outputs_dir = self.__pthjoin(path, 'outputs')
+		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
+		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
+		self.base = tf.keras.models.load_model(base_dir)
+		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
+		self.spec_outputs = [tf.keras.models.load_model(dir) for dir in output_dirs]
+
+	def __pthjoin(self, pth1, pth2):
+		return os.path.join(pth1, pth2)

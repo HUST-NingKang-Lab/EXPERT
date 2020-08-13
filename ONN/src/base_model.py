@@ -150,21 +150,19 @@ class Model6Row1000Col(tf.keras.Model):
 
 	def __init__(self):
 		super(Model6Row1000Col, self).__init__()
-		self.base_block = self.init_base_block1()
-		self.base_batchnorms = [self.init_bn_relu('base' + str(i)) for i in range(1, 5)]
+		self.base_block = self.init_base_block()
+		self.inter_blocks = [self.init_inter_block(i) for i in range(20)]
 		self.concat = tf.concat
 		self.copy = tf.identity
 		# self.add = Add()
 		self.num_units = [1, 4, 7, 22, 56, 43]
-		self.inter_blocks = [self.init_kth_inter_block(k, self.num_units[k]) for k in range(6)]
-		self.out_batchnorms = [self.init_bn_relu(k) for k in range(6)]
 		# self.dropouts = [Dropout(0.5) for k in range(6)]
 		self.out_blocks = [self.init_kth_out_block(k, self.num_units[k]) for k in range(6)]
 		self.postproc_layers = [self.init_kth_post_proc_layer(k) for k in range(6)]
 
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base_block')
-		block.add(Conv1D(512, kernel_size=3, kernel_initializer=he_normal, input_shape=(1462, 7)))
+		block.add(Conv1D(64, kernel_size=3, kernel_initializer=he_normal, input_shape=(1000, 6, 1)))
 		block.add(Activation('relu'))
 		block.add(Conv1D(512, kernel_size=3, kernel_initializer=he_normal))
 		block.add(Activation('relu'))
@@ -175,17 +173,6 @@ class Model6Row1000Col(tf.keras.Model):
 		block.add(Flatten())
 		block.add(Dense(512, kernel_initializer=he_normal))
 		block.add(Activation('relu'))
-		return block
-
-	def init_bn_relu(self, k):
-		if type(k) == str:
-			# if k.startswith('base'):
-			block = tf.keras.Sequential(name='base_bn_relu_block_' + k[-1])
-		else:
-			block = tf.keras.Sequential(name=str(k) + 'th_bn_relu_block')
-		block.add(BatchNormalization(momentum=0.9))
-		block.add(Activation('relu'))
-		# block.add(Dropout(0.5))
 		return block
 
 	def init_inter_block(self, index: int):
@@ -202,6 +189,12 @@ class Model6Row1000Col(tf.keras.Model):
 		block.add(Activation('relu'))
 		return block
 
+	def init_bn_block(self, k):
+		block = tf.keras.Sequential(name=str(k) + 'th_bn_block')
+		block.add(BatchNormalization(momentum=0.99))
+		block.add(Activation('relu'))
+		return block
+
 	def init_out_block(self, index: int, num_source):
 		k = index
 		filter_by_size = lambda x: x[(x > num_source * 4) & (x <= num_source * 16)][::-1]
@@ -214,7 +207,7 @@ class Model6Row1000Col(tf.keras.Model):
 		block.add(BatchNormalization())
 		block.add(Activation('relu'))
 		block.add(Dropout(0.7))
-		block.add(Dense(num_source, name='l' + str(k), activation='sigmoid', use_bias=True))
+		block.add(Dense(num_source, name='l' + str(k), use_bias=True))
 		return block
 
 	def init_kth_post_proc_layer(self, k):
