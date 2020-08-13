@@ -1,1 +1,7 @@
 setuptools>=40.6.3
+ONN==0.0.1
+pandas==1.0.5
+tqdm==4.46.0
+numpy==1.19.0
+scikit-learn==0.23.1
+tensorflow==2.2.0
