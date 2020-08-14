@@ -18,7 +18,7 @@ class Transformer(object):
 		self.db_tool = NCBITaxa(db_file=db_file)
 		self.phylogeny = phylogeny
 
-	def _extract_layers(self, count_matrix, included_ranks=None, verbose=0):
+	def _extract_layers(self, count_matrix, included_ranks=None, verbose=10):
 		"""
 		Step 1: Dealing with entries not in db
 		Step 2: Track lineage for each taxonomy and join with count matrix
@@ -66,8 +66,10 @@ class Transformer(object):
 		fill_in_phylogeny = lambda x: pd.merge(left=self.phylogeny[[x]].copy(),
 			right=cm_with_lngs.groupby(by=x, as_index=False).sum(), on=[x], how='left',
 			suffixes=('_x','_y')).set_index(self.phylogeny[x])[sampleids]
-		cm_with_lngs = cm_keep.join(lineages)
-
+		# Setting genus as index
+		print('Setting genus as index, before:', lineages.shape)
+		cm_with_lngs = cm_keep.join(lineages).groupby(by='genus').sum().join(lineages, on=['genus'])
+		print('After:', cm_with_lngs.shape)
 		if self.phylogeny is not None:
 			if verbose > 0:
 				print('Generating matrix for each rank')
@@ -133,6 +135,10 @@ class Transformer(object):
 		return os.path.join(self.conf_path, file_name)
 
 	def _updata_phylo(self, lineage_names):
+		lineage_names = lineage_names[['superkingdom','phylum','class','order','family','genus']]
+		print('Updating phylo: Just keeping Superkingdom to Genus for phylogeny ({}).'.format(lineage_names.shape))
+		lineage_names = lineage_names.drop_duplicates(subset=['genus'], ignore_index=True)
+		print('Updating phylo: After droping duplicates: {}.'.format(lineage_names.shape))
 		self.phylogeny = lineage_names
 
 
@@ -171,7 +177,7 @@ class NCBITaxa(object):
 	def get_lineage(self, ids, include_ranks=None):
 		if include_ranks == None:
 			include_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family',
-							 'genus', 'species']
+							 'genus']
 		str_ids = map(str, ids)
 		command = 'select taxid, track FROM species WHERE taxid IN ({})'.format(','.join(str_ids))
 		id2lineage = {id: lineage for id, lineage in self.db.execute(command).fetchall()}
