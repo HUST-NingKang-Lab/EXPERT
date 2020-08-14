@@ -4,6 +4,7 @@ import pandas as pd
 from collections import OrderedDict
 from tqdm import tqdm
 import os
+import gc
 import numpy as np
 
 
@@ -45,6 +46,10 @@ class Transformer(object):
 		# Change index for boolean indeces
 		sk_indb.index = count_matrix.index
 		cm_keep = count_matrix[sk_indb]
+		cm_keep = (cm_keep / cm_keep.sum()).astype(np.float32)
+		
+		del count_matrix, taxas, sks, sk_indb
+		gc.collect()
 
 		# Extract layers for entries data
 		if verbose > 0:
@@ -59,6 +64,9 @@ class Transformer(object):
 										  for i in range(1, x.shape[0] + 1)], index=x.index)
 		lineages = lineages.apply(add_prefix, axis=0).apply(str_cumsum, axis=1)
 
+		del multi_entries
+		gc.collect()
+
 		# Fill samples in phylogeny dataframe
 		if verbose > 0:
 			print('Filling samples in phylogeny matrix')
@@ -66,16 +74,21 @@ class Transformer(object):
 		fill_in_phylogeny = lambda x: pd.merge(left=self.phylogeny[[x]].copy(),
 			right=cm_with_lngs.groupby(by=x, as_index=False).sum(), on=[x], how='left',
 			suffixes=('_x','_y')).set_index(x)[sampleids]
+		
 		# Setting genus as index
-		cm_with_lngs = cm_keep.join(lineages).groupby(by='genus').sum().\
-			join(lineages, on=['genus']).reset_index(drop=True)
-
+		cm_with_lngs = cm_keep.join(lineages)
+		cm_with_lngs = cm_with_lngs.groupby(by=included_ranks, sort=False, as_index=False).sum()
+		
+		del cm_keep
+		gc.collect()
+		
 		if self.phylogeny is not None:
 			if verbose > 0:
 				print('Generating matrix for each rank')
 			# join by index
 			matrix_by_rank = OrderedDict( zip(included_ranks, map(fill_in_phylogeny, tqdm(included_ranks)) ))
 			# key -> ranks, index -> taxonomies, column name -> sample ids
+			print(matrix_by_rank['genus'].describe(percentiles=[]))
 			return matrix_by_rank
 		else:
 			if verbose > 0:
@@ -83,6 +96,8 @@ class Transformer(object):
 					  'use all lineages data involved automatically.')
 			self._updata_phylo(lineages)
 			matrix_genus = fill_in_phylogeny('genus')
+			print(matrix_genus.describe(percentiles=[]))
+			#print(matrix_genus.sum())
 			return matrix_genus
 
 	def _track_lineages(self, multi_entries):
@@ -136,7 +151,7 @@ class Transformer(object):
 
 	def _updata_phylo(self, lineage_names):
 		lineage_names = lineage_names[['superkingdom','phylum','class','order','family','genus']]
-		print('Updating phylo: Just keeping Superkingdom to Genus for phylogeny ({}).'.format(lineage_names.shape))
+		print('Updating phylo: Just keeping Superkingdom to Genus for phylogeny: {}.'.format(lineage_names.shape))
 		lineage_names = lineage_names.drop_duplicates(subset=['genus'], ignore_index=True)
 		print('Updating phylo: After droping duplicates: {}.'.format(lineage_names.shape))
 		self.phylogeny = lineage_names

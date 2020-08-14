@@ -11,8 +11,10 @@ def select(args):
 
 	Y = pd.concat(labels, axis=1)
 	X = matrix_genus.T
+	print(Y)
+	print(X)
 	print('Fitting data in RandomForestRegressor...')
-	model = RandomForestRegressor(n_estimators=10, max_depth=10, n_jobs=args.p,
+	model = RandomForestRegressor(n_estimators=500, max_depth=10, n_jobs=args.p,
 								  random_state=1, verbose=5)
 	model.fit(X, Y)
 	print('Done')

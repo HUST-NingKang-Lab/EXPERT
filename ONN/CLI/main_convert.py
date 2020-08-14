@@ -21,8 +21,8 @@ def convert(args):
 		matrix = samples_to_countmatrix(samples)
 
 	included_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
-	matrix = scale_abundance(matrix) # Calculate relative abundance
-
+	matrix = matrix.astype(np.uint64)
+	#print(matrix.dtypes)
 	if args.gen_phylo:
 		print('Optional argument `phylo` is unspecified, '
 			  'the program will generate countmatrix at genus level. '
