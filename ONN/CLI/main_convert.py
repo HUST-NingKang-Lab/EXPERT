@@ -10,7 +10,7 @@ def convert(args):
 	if not os.path.isdir(args.conf):
 		os.mkdir(args.conf)
 	print('running...')
-	print('Reading data...')
+	print('Reading and concatenating data, this could be slow if you have huge amount of data')
 	with open(args.i, 'r') as f:
 		input_files = f.read().splitlines()
 	if args.in_cm:
@@ -25,7 +25,7 @@ def convert(args):
 
 	if args.gen_phylo:
 		print('Optional argument `phylo` is unspecified, '
-			  'the program will generate countmatrix at genus level.'
+			  'the program will generate countmatrix at genus level. '
 			  'Phylogeny will be automatically constructed '
 			  'using all taxonomic entries data involved. '
 			  'You can select features use that.')
