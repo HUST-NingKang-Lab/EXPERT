@@ -1,17 +1,10 @@
 import pandas as pd
-import tensorflow_hub as hub
 import argparse
 from functools import reduce
 from livingTree import SuperTree
 import os
 from tqdm import tqdm
 
-
-def load_extractor(model_path, input_shape):
-	if model_path == None:
-		model_path = 'transferred-onn/explore-NB/MNIST/feature-vector/'
-	model = hub.KerasLayer(model_path, input_shape=input_shape)
-	return model
 
 def str_sum(iterable):
 	return reduce(lambda x, y: x + y, iterable)
