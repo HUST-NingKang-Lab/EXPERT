@@ -73,7 +73,7 @@ class Transformer(object):
 		sampleids = cm_keep.columns.tolist()
 		fill_in_phylogeny = lambda x: pd.merge(left=self.phylogeny[[x]].copy(),
 			right=cm_with_lngs.groupby(by=x, as_index=False).sum(), on=[x], how='left',
-			suffixes=('_x','_y')).set_index(x)[sampleids]
+			suffixes=('_x','_y')).set_index(x)[sampleids].fillna(0)
 		
 		# Setting genus as index
 		cm_with_lngs = cm_keep.join(lineages)

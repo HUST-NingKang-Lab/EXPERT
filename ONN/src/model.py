@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 
-he_normal = tf.keras.initializers.HeNormal(seed=0)
+he_normal = tf.keras.initializers.HeNormal(seed=1)
 
 # transfer: load saved model, build new model from scratch, new model.base = saved model.base
 
@@ -40,24 +40,24 @@ class Model(tf.keras.Model):
 
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base')
-		block.add(Conv2D(32, kernel_size=(1, 3), kernel_initializer=he_normal, input_shape=(1000, 6, 1)))
-		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
-		block.add(Conv2D(32, kernel_size=(1, 2), kernel_initializer=he_normal))
+		block.add(Conv2D(64, kernel_size=(1, 3), kernel_initializer=he_normal, input_shape=(1000, 6, 1)))
+		#block.add(Activation('relu')) # (1000, 4, 64) -> 256000
+		block.add(Conv2D(64, kernel_size=(1, 2), kernel_initializer=he_normal))
 		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
-		block.add(Conv2D(64, kernel_size=(1, 2), kernel_initializer=he_normal))
-		block.add(Activation('relu')) # (1000, 2, 64) -> 128000
-		block.add(Conv2D(64, kernel_size=(1, 2), kernel_initializer=he_normal))
-		block.add(Activation('relu')) # (1000, 1, 64) -> 64000
+		block.add(Conv2D(128, kernel_size=(1, 2), kernel_initializer=he_normal))
+		#block.add(Activation('relu')) # (1000, 2, 64) -> 128000
+		block.add(Conv2D(128, kernel_size=(1, 2), kernel_initializer=he_normal))
+		#block.add(Activation('relu')) # (1000, 1, 64) -> 64000
 		block.add(Conv2D(128, kernel_size=(10, 1), strides=(5, 1), kernel_initializer=he_normal))
-		block.add(Activation('relu')) # (198, 1, 128) -> 25344
+		#block.add(Activation('relu')) # (198, 1, 128) -> 25344
 		block.add(Conv2D(128, kernel_size=(6, 1), strides=(3, 1), kernel_initializer=he_normal))
 		block.add(Activation('relu')) # (65, 1, 128) -> 8320
 		block.add(Conv2D(256, kernel_size=(5, 1), strides=(5, 1), kernel_initializer=he_normal))
-		block.add(Activation('relu')) # (13, 1, 256) -> 3328
+		#block.add(Activation('relu')) # (13, 1, 256) -> 3328
 		block.add(Conv2D(256, kernel_size=(5, 1), strides=(2, 1), kernel_initializer=he_normal))
 		block.add(Activation('relu')) # (5, 1, 256) -> 1280
 		block.add(Conv2D(512, kernel_size=(5, 1), kernel_initializer=he_normal))
-		block.add(Activation('relu')) # (1, 1, 512) -> 512
+		#block.add(Activation('relu')) # (1, 1, 512) -> 512
 		block.add(Flatten()) # (512, )
 		block.add(Dense(512, kernel_initializer=he_normal))
 		block.add(Activation('relu')) # (512, )
@@ -82,7 +82,7 @@ class Model(tf.keras.Model):
 		return block
 
 	def init_output_block(self, index, name, n_units):
-		input_shape = (128 * (index + 1), )
+		input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
 		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc0',
 						kernel_initializer=he_normal, input_shape=input_shape))
@@ -92,8 +92,9 @@ class Model(tf.keras.Model):
 						kernel_initializer=he_normal))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dropout(0.7))
+		#block.add(Dropout(0.5))
 		block.add(Dense(n_units, name='l' + str(index), use_bias=True))
+		block.add(Activation('sigmoid'))
 		return block
 
 	def init_post_proc_layer(self, name):
@@ -106,7 +107,7 @@ class Model(tf.keras.Model):
 		return Lambda(scale_output, name=name)
 
 	def _init_bn_layer(self):
-		return BatchNormalization(momentum=0.99)
+		return BatchNormalization(momentum=0.9)
 
 	def call(self, inputs, training=False):
 		base = self.base(inputs, training=training)
@@ -114,15 +115,34 @@ class Model(tf.keras.Model):
 		inter_logits = [self.spec_inters[i](base, training=training)
 						for i in range(self.n_layers)]
 
-		concat_logits = inter_logits[0:1] + [self.concat(inter_logits[0:i])
-											 for i in range(2, self.n_layers + 1)]
+		concat_logits = [self.concat(inter_logits[i-1:i+1]) if i >= 1 else inter_logits[0:i+1]
+						 for i in range(self.n_layers)]
 
 		out_logits = [self.spec_outputs[i](concat_logits[i], training=training)
 					  for i in range(self.n_layers)]
 
-		outputs = (self.spec_postprocs[i](out_logits[i], training=training)
-				   for i in range(self.n_layers))
-		return outputs
+		#outputs = {'output_'+str(i): self.spec_postprocs[i](out_logits[i], training=training)
+		#		   for i in range(self.n_layers)}
+		outputs = [self.spec_postprocs[i](out_logits[i], training=training)
+				   for i in range(self.n_layers)]
+		if self.n_layers == 1:
+			l1 = outputs[0]
+			return l1
+		elif self.n_layers == 2:
+			l1, l2 = tuple(outputs)
+			return l1, l2
+		elif self.n_layers == 3:
+			l1, l2, l3 = tuple(outputs)
+			return l1, l2, l3
+		elif self.n_layers == 4:
+			l1, l2, l3, l4 = tuple(outputs)
+			return l1, l2, l3, l4
+		elif self.n_layers == 5:
+			l1, l2, l3, l4, l5 = tuple(outputs)
+			return l1, l2, l3, l4, l5
+		else:
+			return self.concat(outputs)
+		#return outputs
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num

@@ -7,7 +7,7 @@ def select(args):
 	matrix_genus = pd.read_hdf(args.cm, key='genus')
 	phylo = pd.read_csv(args.i, index_col=0)
 	#print(phylo)
-	labels = [pd.read_hdf(args.labels, key='l'+str(layer)) for layer in range(args.dmax+1)]
+	labels = [pd.read_hdf(args.labels, key='l'+str(layer)) for layer in range(args.dmax)]
 
 	Y = pd.concat(labels, axis=1)
 	X = matrix_genus.T
