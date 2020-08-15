@@ -109,12 +109,19 @@ class Model(tf.keras.Model):
 		return BatchNormalization(momentum=0.99)
 
 	def call(self, inputs, training=False):
-		base = self.base(inputs)
-		inter_logits = [self.spec_inters[i](base) for i in range(self.n_layers)]
+		base = self.base(inputs, training=training)
+
+		inter_logits = [self.spec_inters[i](base, training=training)
+						for i in range(self.n_layers)]
+
 		concat_logits = inter_logits[0:1] + [self.concat(inter_logits[0:i])
 											 for i in range(2, self.n_layers + 1)]
-		out_logits = [self.spec_outputs[i](concat_logits[i]) for i in range(self.n_layers)]
-		outputs = (self.spec_postprocs[i](out_logits[i]) for i in range(self.n_layers))
+
+		out_logits = [self.spec_outputs[i](concat_logits[i], training=training)
+					  for i in range(self.n_layers)]
+
+		outputs = (self.spec_postprocs[i](out_logits[i], training=training)
+				   for i in range(self.n_layers))
 		return outputs
 
 	def _get_n_units(self, num):
