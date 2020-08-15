@@ -24,12 +24,8 @@ def train(args):
 	stopper = EarlyStopping(patience=20, verbose=5, restore_best_weights=True)
 
 	_, layer_units = parse_otlg(args.otlg)			   # sources and layer units
-	#layer_units = [units + 1 for units in layer_units] # Unknown source
-	#loss_weights = {'output_'+str(i+1): layer_units[i] for i in range(len(layer_units))}
 	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1)) for i, y in enumerate(Y_train)]
-	#print(sample_weight)
-	#sample_weight = np.ones(X_train.shape[0])
-	
+
 	strategy = MirroredStrategy()
 	with strategy.scope():
 		model = Model(layer_units=layer_units)
