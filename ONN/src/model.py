@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 
-he_normal = tf.keras.initializers.HeNormal(seed=1)
+he_normal = tf.keras.initializers.HeUniform(seed=1)
 
 # transfer: load saved model, build new model from scratch, new model.base = saved model.base
 
@@ -23,8 +23,9 @@ class Model(tf.keras.Model):
 		if layer_units:
 			self.n_layers = len(layer_units)
 			self.base = self.init_base_block()
-			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer))
-							   for layer in range(self.n_layers)]
+			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer), 
+													  n_units=n_units)
+							   for layer, n_units in enumerate(layer_units)]
 			self.spec_outputs = [self.init_output_block(index=layer, name='l{}_output'.format(layer),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
@@ -41,59 +42,73 @@ class Model(tf.keras.Model):
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base')
 		block.add(Conv2D(64, kernel_size=(1, 3), kernel_initializer=he_normal, input_shape=(1000, 6, 1)))
-		#block.add(Activation('relu')) # (1000, 4, 64) -> 256000
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
 		block.add(Conv2D(64, kernel_size=(1, 2), kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
 		block.add(Conv2D(128, kernel_size=(1, 2), kernel_initializer=he_normal))
-		#block.add(Activation('relu')) # (1000, 2, 64) -> 128000
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (1000, 2, 64) -> 128000
 		block.add(Conv2D(128, kernel_size=(1, 2), kernel_initializer=he_normal))
-		#block.add(Activation('relu')) # (1000, 1, 64) -> 64000
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (1000, 1, 64) -> 64000
 		block.add(Conv2D(128, kernel_size=(10, 1), strides=(5, 1), kernel_initializer=he_normal))
-		#block.add(Activation('relu')) # (198, 1, 128) -> 25344
-		block.add(Conv2D(128, kernel_size=(6, 1), strides=(3, 1), kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (198, 1, 128) -> 25344
+		block.add(Conv2D(256, kernel_size=(6, 1), strides=(3, 1), kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (65, 1, 128) -> 8320
 		block.add(Conv2D(256, kernel_size=(5, 1), strides=(5, 1), kernel_initializer=he_normal))
-		#block.add(Activation('relu')) # (13, 1, 256) -> 3328
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (13, 1, 256) -> 3328
 		block.add(Conv2D(256, kernel_size=(5, 1), strides=(2, 1), kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (5, 1, 256) -> 1280
 		block.add(Conv2D(512, kernel_size=(5, 1), kernel_initializer=he_normal))
-		#block.add(Activation('relu')) # (1, 1, 512) -> 512
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (1, 1, 512) -> 512
 		block.add(Flatten()) # (512, )
 		block.add(Dense(512, kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
 
-	def init_inter_block(self, index, name):
+	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(256, name='l' + str(k) + '_inter_fc0', input_shape=(512, ),
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', input_shape=(512, ), use_bias=False, 
 						kernel_initializer=he_normal))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(256, name='l' + str(k) + '_inter_fc1', kernel_initializer=he_normal))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_normal))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(128, name='l' + str(k) + '_inter_fc2', kernel_initializer=he_normal))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_normal))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(128, name='l' + str(k) + '_inter_fc3', kernel_initializer=he_normal))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc3', use_bias=False, kernel_initializer=he_normal))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		return block
 
 	def init_output_block(self, index, name, n_units):
-		input_shape = (128 * 2 if index > 0 else 128, )
+		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc0',
-						kernel_initializer=he_normal, input_shape=input_shape))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc1',
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc0', use_bias=False,
 						kernel_initializer=he_normal))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		#block.add(Dropout(0.5))
-		block.add(Dense(n_units, name='l' + str(index), use_bias=True))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc1', use_bias=False,
+						kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc2', use_bias=False,
+						kernel_initializer=he_normal))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		#block.add(Dropout(0.3))
+		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
 
@@ -115,7 +130,7 @@ class Model(tf.keras.Model):
 		inter_logits = [self.spec_inters[i](base, training=training)
 						for i in range(self.n_layers)]
 
-		concat_logits = [self.concat(inter_logits[i-1:i+1]) if i >= 1 else inter_logits[0:i+1]
+		concat_logits = [self.concat(inter_logits[i-1:i+1]) if i >= 1 else inter_logits[0]
 						 for i in range(self.n_layers)]
 
 		out_logits = [self.spec_outputs[i](concat_logits[i], training=training)
