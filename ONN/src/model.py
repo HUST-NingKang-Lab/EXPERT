@@ -46,31 +46,31 @@ class Model(tf.keras.Model):
 		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform, input_shape=(1000, 6, 1)))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
-		block.add(Conv2D(64, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
-		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(256, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 2, 64) -> 128000
-		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Activation('relu')) # (1000, 2, 128) -> 256000
+		block.add(Conv2D(256, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
+		block.add(Conv2D(64, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 64) -> 64000
-		block.add(Conv2D(128, kernel_size=(10, 1), strides=(5, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(16, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (198, 1, 128) -> 25344
-		block.add(Conv2D(256, kernel_size=(6, 1), strides=(3, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Activation('relu')) # (1000, 1, 16) -> 16000
+		block.add(Conv2D(4, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (65, 1, 128) -> 8320
-		block.add(Conv2D(256, kernel_size=(5, 1), strides=(5, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Activation('relu')) # (1000, 1, 4) -> 4000
+		block.add(Conv2D(1, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (13, 1, 256) -> 3328
-		block.add(Conv2D(256, kernel_size=(5, 1), strides=(2, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
+		block.add(Flatten()) # (1000, )
+		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (5, 1, 256) -> 1280
-		block.add(Conv2D(512, kernel_size=(5, 1), use_bias=False, kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1, 1, 512) -> 512
-		block.add(Flatten()) # (512, )
+		block.add(Activation('relu')) # (512, )
 		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
