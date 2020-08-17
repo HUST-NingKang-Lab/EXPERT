@@ -16,10 +16,10 @@ def train(args):
 								  end_idx=args.end_idx, dmax=args.dmax)
 	
 	warmup_ep = 2
-	epochs = 10000
+	epochs = 1000
 	warmup_lr = 1e-6
 	lr = 1e-4
-	min_rm = 0
+	min_rm = 1e-10
 
 	warmup_logger = CSVLogger(filename=args.log)
 	logger = CSVLogger(filename=args.log, append=True)
