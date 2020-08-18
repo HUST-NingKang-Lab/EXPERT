@@ -28,11 +28,14 @@ class Model(tf.keras.Model):
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer), 
 													  n_units=n_units)
 							   for layer, n_units in enumerate(layer_units)]
+			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer),
+														n_units=n_units)
+								 for layer, n_units in enumerate(layer_units)]
 			self.spec_outputs = [self.init_output_block(index=layer, name='l{}_output'.format(layer),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
 		elif restore_from:
-			self.__restore_from(restore_from)
+			self.__restore_from(restore_from)  # finish here
 			self.n_layers = len(self.spec_outputs)
 		else:
 			raise ValueError('Please given correct model path to restore, '
@@ -94,13 +97,22 @@ class Model(tf.keras.Model):
 		#block.add(Activation('relu'))
 		return block
 
-	def init_output_block(self, index, name, n_units):
-		#input_shape = (128 * 2 if index > 0 else 128, )
+	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc0', use_bias=False,
+		k = index
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc0', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc1', use_bias=False,
+						kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu'))
+		return block
+
+	def init_output_block(self, index, name, n_units):
+		#input_shape = (128 * 2 if index > 0 else 128, )
+		block = tf.keras.Sequential(name=name)
 		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc1', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
@@ -109,7 +121,7 @@ class Model(tf.keras.Model):
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dropout(0.6))
+		#block.add(Dropout(0.5))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
@@ -135,10 +147,17 @@ class Model(tf.keras.Model):
 		inter_logits = [self.spec_inters[i](base, training=training)
 						for i in range(self.n_layers)]
 
-		concat_logits = [self.concat(inter_logits[i-1:i+1]) if i >= 1 else inter_logits[0]
-						 for i in range(self.n_layers)]
+		integ_logits = []
+		for layer in range(self.n_layers):
+			if layer == 0:
+				integ_logit = self.spec_integs[layer](inter_logits[layer], training=training)
+				integ_logits.append(integ_logit)
+			else:
+				integ_logit = self.spec_integs[layer](self.concat([integ_logits[layer-1], inter_logits[layer]]),
+													  training=training)
+				integ_logits.append(integ_logit)
 
-		out_logits = [self.spec_outputs[i](concat_logits[i], training=training)
+		out_logits = [self.spec_outputs[i](integ_logits[i], training=training)
 					  for i in range(self.n_layers)]
 
 		#outputs = {'output_'+str(i): self.spec_postprocs[i](out_logits[i], training=training)
@@ -174,6 +193,7 @@ class Model(tf.keras.Model):
 
 	def save_blocks(self, path):
 		inters_dir = self.__pthjoin(path, 'inters')
+		integs_dir = self.__pthjoin(path, 'integs')
 		outputs_dir = self.__pthjoin(path, 'outputs')
 		for dir in [path, inters_dir, outputs_dir]:
 			if not os.path.isdir(dir):
@@ -181,16 +201,20 @@ class Model(tf.keras.Model):
 		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
 		for layer in range(self.n_layers):
 			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
+			self.spec_integs[layer].save(self.__pthjoin(integs_dir, str(layer)), save_format='tf')
 			self.spec_outputs[layer].save(self.__pthjoin(outputs_dir, str(layer)), save_format='tf')
 
 	def __restore_from(self, path):
 		base_dir = self.__pthjoin(path, 'base')
 		inters_dir = self.__pthjoin(path, 'inters')
+		integs_dir = self.__pthjoin(path, 'integs')
 		outputs_dir = self.__pthjoin(path, 'outputs')
 		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
+		integ_dirs = [self.__pthjoin(integs_dir, i) for i in os.listdir(integs_dir)]
 		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
 		self.base = tf.keras.models.load_model(base_dir)
 		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
+		self.spec_integs = [tf.keras.models.load_model(dir) for dir in integ_dirs]
 		self.spec_outputs = [tf.keras.models.load_model(dir) for dir in output_dirs]
 
 	def __pthjoin(self, pth1, pth2):

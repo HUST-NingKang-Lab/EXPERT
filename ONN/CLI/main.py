@@ -6,7 +6,15 @@ def main():
 	parser = get_CLI_parser()
 	#parser.print_help()
 	args = parser.parse_args()
-	if args.mode == 'construct':
+	if args.mode == 'init':
+		from ONN.CLI.main_init import init
+		init(args)
+		sys.exit(0)
+	elif args.mode == 'download':
+		from ONN.CLI.main_download import download
+		download(args)
+		sys.exit(0)
+	elif args.mode == 'construct':
 		from ONN.CLI.main_construct import construct
 		construct(args)
 		sys.exit(0)

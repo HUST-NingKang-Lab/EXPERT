@@ -6,7 +6,22 @@ from livingTree import SuperTree
 import os
 from tqdm import tqdm
 from collections import OrderedDict
+from pandas.io.json._normalize import nested_to_record
 
+
+def read_input_list(path):
+	with open(path, 'r') as f:
+		return f.read().splitlines()
+
+def runid_from_taxassign(path):
+	return pd.read_csv(path, sep='\t', nrows=1, index_col=0).columns.tolist()
+
+def format_sample_info(sample):
+	metadata = pd.DataFrame(nested_to_record(sample)['attributes.sample-metadata'])
+	metadata['key'] = metadata['key'] + metadata['unit'].apply(lambda x: '(unit: {})'.format(x) if x else '')
+	metadata = dict(zip(metadata['key'], metadata['value']))
+	metadata['Sample ID'] = sample['id']
+	return metadata
 
 def read_matrices(path, split_idx, end_idx):
 	include_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
@@ -84,7 +99,7 @@ def scale_abundance(matrix):
 	return matrix / matrix.sum()
 
 def get_CLI_parser():
-	modes = ['map', 'construct','convert', 'select', 'train', 'transfer', 'search']
+	modes = ['init','download', 'map', 'construct','convert', 'select', 'train', 'transfer', 'search']
 	parser = argparse.ArgumentParser(description=('The program is designed to help you '
 												 'to transfer '
 												 'Ontology-aware Neural Network model '
