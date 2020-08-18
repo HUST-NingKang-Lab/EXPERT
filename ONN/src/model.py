@@ -68,10 +68,10 @@ class Model(tf.keras.Model):
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -79,19 +79,19 @@ class Model(tf.keras.Model):
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', input_shape=(512, ), use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', input_shape=(1024, ), use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc3', use_bias=False, kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
+		#block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc3', use_bias=False, kernel_initializer=he_uniform))
+		#block.add(self._init_bn_layer())
+		#block.add(Activation('relu'))
 		return block
 
 	def init_output_block(self, index, name, n_units):
@@ -105,11 +105,11 @@ class Model(tf.keras.Model):
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc2', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc2', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		#block.add(Dropout(0.3))
+		block.add(Dropout(0.6))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
