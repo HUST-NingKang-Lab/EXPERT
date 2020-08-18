@@ -1,6 +1,6 @@
 import os
 from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, \
-	Conv2D, Activation, Lambda
+	Conv2D, Activation, Lambda, Layer
 import tensorflow as tf
 from collections import OrderedDict
 import numpy as np
@@ -12,7 +12,7 @@ he_uniform = tf.keras.initializers.HeUniform(seed=1)
 
 class Model(tf.keras.Model):
 
-	def __init__(self, layer_units=None, restore_from=None):
+	def __init__(self, layer_units=None, num_features=1000, restore_from=None):
 		"""
 		:param phylogeny:
 		:param ontology:
@@ -22,10 +22,12 @@ class Model(tf.keras.Model):
 		super(Model, self).__init__()
 		# fine tune flag
 		self.fine_tune = False
+		print('Set .fine_tune to True to protect BatchNormalization layers in base block when doing Fine-tuning')
 		if layer_units:
 			self.n_layers = len(layer_units)
+			self.feature_mapper = self.init_mapper_block(num_features=num_features)
 			self.base = self.init_base_block()
-			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer), 
+			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
 													  n_units=n_units)
 							   for layer, n_units in enumerate(layer_units)]
 			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer),
@@ -44,6 +46,11 @@ class Model(tf.keras.Model):
 		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer))
 							   for layer in range(self.n_layers)]
 
+	def init_mapper_block(self, num_features): # map input feature to ...
+		block = tf.keras.Sequential(name='feature mapper')
+		block.add(Mapper(num_features=num_features))
+		return block
+
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base')
 		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform, input_shape=(1000, 6, 1)))
@@ -58,15 +65,6 @@ class Model(tf.keras.Model):
 		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
-		#block.add(Conv2D(64, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
-		#block.add(self._init_bn_layer())
-		#block.add(Activation('relu')) # (1000, 1, 64) -> 64000
-		#block.add(Conv2D(16, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
-		#block.add(self._init_bn_layer())
-		#block.add(Activation('relu')) # (1000, 1, 16) -> 16000
-		#block.add(Conv2D(4, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
-		#block.add(self._init_bn_layer())
-		#block.add(Activation('relu')) # (1000, 1, 4) -> 4000
 		block.add(Conv2D(1, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
@@ -74,7 +72,7 @@ class Model(tf.keras.Model):
 		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -82,42 +80,39 @@ class Model(tf.keras.Model):
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', input_shape=(1024, ), use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc0', input_shape=(1024, ), use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		#block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc3', use_bias=False, kernel_initializer=he_uniform))
-		#block.add(self._init_bn_layer())
-		#block.add(Activation('relu'))
 		return block
 
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc0', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc0', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc1', use_bias=False,
+		'''block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc1', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
+		block.add(Activation('relu'))'''
 		return block
 
 	def init_output_block(self, index, name, n_units):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(index) + '_out_fc1', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc1', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc2', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc2', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
@@ -139,25 +134,21 @@ class Model(tf.keras.Model):
 		return BatchNormalization(momentum=0.9)
 
 	def call(self, inputs, training=False):
-		if self.fine_tune == False:
-			base = self.base(inputs, training=training)
-		else:
-			base = self.base(inputs, training=False)
-
-		inter_logits = [self.spec_inters[i](base, training=training)
-						for i in range(self.n_layers)]
+		inputs = self.feature_mapper(inputs)
+		base = self.base(inputs, training=training if self.fine_tune == False else False)
+		inter_logits = [self.spec_inters[i](base, training=training) for i in range(self.n_layers)]
 
 		integ_logits = []
 		for layer in range(self.n_layers):
 			if layer == 0:
-				integ_logit = self.spec_integs[layer](inter_logits[layer], training=training)
-				integ_logits.append(integ_logit)
+				integ_logits.append(self.spec_integs[layer](inter_logits[layer], training=training))
 			else:
-				integ_logit = self.spec_integs[layer](self.concat([integ_logits[layer-1], inter_logits[layer]]),
-													  training=training)
-				integ_logits.append(integ_logit)
+				integ_logits.append(self.spec_integs[layer](self.concat([integ_logits[layer-1],
+																		 inter_logits[layer]]),
+													  training=training))
 
-		out_logits = [self.spec_outputs[i](integ_logits[i], training=training)
+		out_logits = [self.spec_outputs[i](integ_logits[i],
+										   training=training)
 					  for i in range(self.n_layers)]
 
 		#outputs = {'output_'+str(i): self.spec_postprocs[i](out_logits[i], training=training)
@@ -182,7 +173,6 @@ class Model(tf.keras.Model):
 		else:
 			return self.concat(outputs)
 
-
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
 		supported_range = 2**np.arange(1, 11)
@@ -198,6 +188,7 @@ class Model(tf.keras.Model):
 		for dir in [path, inters_dir, outputs_dir]:
 			if not os.path.isdir(dir):
 				os.mkdir(dir)
+		self.feature_mapper.save(self.__pthjoin(path, 'feature_mapper'), save_format='tf')
 		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
 		for layer in range(self.n_layers):
 			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
@@ -205,6 +196,7 @@ class Model(tf.keras.Model):
 			self.spec_outputs[layer].save(self.__pthjoin(outputs_dir, str(layer)), save_format='tf')
 
 	def __restore_from(self, path):
+		mapper_dir = self.__pthjoin(path, 'feature_mapper')
 		base_dir = self.__pthjoin(path, 'base')
 		inters_dir = self.__pthjoin(path, 'inters')
 		integs_dir = self.__pthjoin(path, 'integs')
@@ -212,6 +204,7 @@ class Model(tf.keras.Model):
 		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
 		integ_dirs = [self.__pthjoin(integs_dir, i) for i in os.listdir(integs_dir)]
 		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
+		self.feature_mapper = tf.keras.models.load_model(mapper_dir)
 		self.base = tf.keras.models.load_model(base_dir)
 		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
 		self.spec_integs = [tf.keras.models.load_model(dir) for dir in integ_dirs]
@@ -219,3 +212,15 @@ class Model(tf.keras.Model):
 
 	def __pthjoin(self, pth1, pth2):
 		return os.path.join(pth1, pth2)
+
+
+class Mapper(Layer): # A PCA learner
+	def __init__(self, num_features):
+		super(Mapper, self).__init__()
+		self.w = self.add_weight(shape=(1000, num_features), initializer="random_normal", trainable=True)
+		self.concat = Concatenate(axis=1)
+	def call(self, inputs):
+		rank_mats = [inputs[:, i:i+1] for i in range(tf.shape(inputs)[1])]
+		outputs = self.concat([tf.matmul(self.w, rank_mat) for rank_mat in rank_mats])
+		outputs = tf.expand_dims(outputs, axis=2)
+		return outputs

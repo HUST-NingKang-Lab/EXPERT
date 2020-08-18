@@ -27,7 +27,7 @@ def read_matrices(path, split_idx, end_idx):
 	include_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
 	matrices = np.array([pd.read_hdf(path, key=rank).T for rank in include_ranks])
 	matrices = matrices.swapaxes(0, 1).swapaxes(1, 2)
-	matrices = np.expand_dims(matrices, axis=3)
+	#matrices = np.expand_dims(matrices, axis=3)
 	idx = np.arange(matrices.shape[0])
 	np.random.seed(0)
 	np.random.shuffle(idx)

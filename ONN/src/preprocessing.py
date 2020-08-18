@@ -238,6 +238,17 @@ class NCBITaxa(object):
 		return names
 
 
+"""
+if missing:
+	query = ','.join(['"%s"' %n for n in missing])
+	result = self.db.execute('select spname, taxid from synonym where spname IN (%s)' %query)
+	for sp, taxid in result.fetchall():
+		oname = name2origname[sp.lower()]
+		name2id.setdefault(oname, []).append(taxid)
+		#name2realname[oname] = sp
+"""
+
+
 '''names = ['bacteria']
 command = 'select spname, taxid FROM species WHERE spname IN ({})'.format(','.join(map( lambda x:'\"'+x+'\"', names)))
 name2id = {name: id for name, id in db.execute(command).fetchall()}
