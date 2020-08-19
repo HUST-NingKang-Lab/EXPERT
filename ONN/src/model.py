@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 
-he_uniform = tf.keras.initializers.HeUniform(seed=1)
+he_uniform = tf.keras.initializers.HeUniform(seed=0)
 
 # transfer: load saved model, build new model from scratch, new model.base = saved model.base
 
@@ -53,19 +53,20 @@ class Model(tf.keras.Model):
 	def init_mapper_block(self, num_features): # map input feature to ...
 		block = tf.keras.Sequential(name='feature_mapper')
 		block.add(Mapper(num_features=num_features, name='feature_mapper_layer'))
+		block.add(self._init_bn_layer())
 		return block
 
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base')
-		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform, input_shape=(1500, 6, 1)))
+		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
+		block.add(Activation('linear')) # (1000, 4, 64) -> 256000
 		block.add(Conv2D(64, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
 		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 2, 128) -> 256000
+		block.add(Activation('linear')) # (1000, 2, 128) -> 256000
 		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
@@ -73,9 +74,6 @@ class Model(tf.keras.Model):
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (512, )
 		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
@@ -111,7 +109,7 @@ class Model(tf.keras.Model):
 	def init_output_block(self, index, name, n_units):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc0', use_bias=False,
+		'''block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc0', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
@@ -119,7 +117,7 @@ class Model(tf.keras.Model):
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		'''block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc2', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc2', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))'''
@@ -228,7 +226,7 @@ class Mapper(Layer): # A PCA learner
 		super(Mapper, self).__init__(name=name)
 		super(Mapper, self).__init__(kwargs)
 		self.num_features = num_features
-		self.w = self.add_weight(shape=(1500, num_features), name='w', initializer="random_normal", trainable=True)
+		self.w = self.add_weight(shape=(1024, num_features), name='w', initializer="random_normal", trainable=True)
 		self.matmul = tf.matmul
 	
 	def call(self, inputs):
