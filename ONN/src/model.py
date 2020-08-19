@@ -76,7 +76,7 @@ class Model(tf.keras.Model):
 		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -115,14 +115,14 @@ class Model(tf.keras.Model):
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc1', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc1', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc2', use_bias=False,
+		'''block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc2', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
+		block.add(Activation('relu'))'''
 		block.add(Dropout(0.7))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
