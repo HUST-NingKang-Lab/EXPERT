@@ -1,9 +1,0 @@
-# Constructed from biom file
-# OTU ID	SRR1027859	taxonomy
-103181	3.0	sk__Bacteria
-61324	3.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria
-150579	2.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria;o__Alteromonadales;f__Alteromonadaceae
-242853	2.0	sk__Bacteria;k__;p__Proteobacteria;c__Oligoflexia;o__Oligoflexales
-105705	2.0	sk__Bacteria;k__;p__Proteobacteria;c__Oligoflexia;o__Oligoflexales;f__Oligoflexaceae
-181514	1.0	sk__Eukaryota;k__Fungi
-6852	2.0	sk__Eukaryota;k__Fungi;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales

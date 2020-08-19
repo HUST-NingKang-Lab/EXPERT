@@ -1,9 +1,0 @@
-# Constructed from biom file
-# OTU ID	SRR1027860	taxonomy
-260862	7.0	sk__Bacteria;k__;p__Chlamydiae;c__Chlamydiia;o__Chlamydiales;f__Chlamydiaceae;g__Chlamydia
-250171	1.0	sk__Bacteria;k__;p__Firmicutes;c__Bacilli;o__Bacillales;f__Staphylococcaceae;g__Staphylococcus
-181514	1.0	sk__Eukaryota;k__Fungi
-116849	1.0	sk__Eukaryota;k__Fungi;p__Ascomycota;c__Saccharomycetes
-6852	3.0	sk__Eukaryota;k__Fungi;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales
-151267	1.0	sk__Eukaryota;k__Fungi;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales;f__Saccharomycetaceae
-65042	2.0	sk__Eukaryota;k__Metazoa

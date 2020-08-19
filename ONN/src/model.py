@@ -98,10 +98,10 @@ class Model(tf.keras.Model):
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc0', use_bias=False,
+		'''block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc0', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
+		block.add(Activation('relu'))'''
 		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(k) + '_integ_fc1', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())

@@ -1,8 +1,0 @@
-# Constructed from biom file
-# OTU ID	ERR2200208	taxonomy
-103181	1.0	sk__Bacteria
-25843	1.0	sk__Bacteria;k__;p__Chloroflexi;c__Anaerolineae
-21282	3.0	sk__Bacteria;k__;p__Proteobacteria
-86908	3.0	sk__Bacteria;k__;p__Proteobacteria;c__Betaproteobacteria
-205344	4.0	sk__Bacteria;k__;p__Proteobacteria;c__Betaproteobacteria;o__;f__;g__Candidatus_Accumulibacter
-34564	4.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria;o__;f__Competibacteraceae;g__Candidatus_Competibacter

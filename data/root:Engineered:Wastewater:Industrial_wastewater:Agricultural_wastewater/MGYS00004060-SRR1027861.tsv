@@ -1,7 +1,0 @@
-# Constructed from biom file
-# OTU ID	SRR1027861	taxonomy
-103181	2.0	sk__Bacteria
-157715	1.0	sk__Bacteria;k__;p__Cyanobacteria
-21282	1.0	sk__Bacteria;k__;p__Proteobacteria
-16188	1.0	sk__Bacteria;k__;p__Proteobacteria;c__Gammaproteobacteria;o__Enterobacterales
-6852	3.0	sk__Eukaryota;k__Fungi;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales

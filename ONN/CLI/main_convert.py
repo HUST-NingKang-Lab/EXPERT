@@ -29,7 +29,7 @@ def convert(args):
 			  'Phylogeny will be automatically constructed '
 			  'using all taxonomic entries data involved. '
 			  'You can select features use that.')
-		tm = Transformer(conf_path=args.conf, phylogeny=args.phylo, db_file=args.db)
+		tm = Transformer(conf_path=args.tmp, phylogeny=args.phylo, db_file=args.db)
 		matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
 		print('Saving results...')
 		matrix_genus.to_hdf(args.o, key='genus', mode='a')

@@ -7,7 +7,36 @@ import os
 from tqdm import tqdm
 from collections import OrderedDict
 from pandas.io.json._normalize import nested_to_record
+from ONN.src.model import Model
 
+
+def transfer_weights(base_model: Model, init_model: Model, new_mapper, reuse_levels):
+	init_model.base = base_model.base
+	if not new_mapper:
+		init_model.feature_mapper = base_model.feature_mapper
+		init_model.feature_mapper.trainable = False
+	for layer, reuse_level in enumerate(reuse_levels):
+		use_level = int(reuse_level)
+		if use_level == 0:
+			pass
+		elif use_level == 1:
+			init_model.spec_inters[layer] = init_model.spec_inters[layer]
+			init_model.spec_inters[layer].trainable = False
+		elif use_level == 2:
+			init_model.spec_inters[layer] = init_model.spec_inters[layer]
+			init_model.spec_integs[layer] = init_model.spec_integs[layer]
+			init_model.spec_inters[layer].trainable = False
+			init_model.spec_integs[layer].trainable = False
+		elif use_level == 3:
+			init_model.spec_inters[layer] = init_model.spec_inters[layer]
+			init_model.spec_integs[layer] = init_model.spec_integs[layer]
+			init_model.spec_outputs[layer] = init_model.spec_outputs[layer]
+			init_model.spec_inters[layer].trainable = False
+			init_model.spec_integs[layer].trainable = False
+			init_model.spec_outputs[layer].trainable = False
+		else:
+			raise ValueError('The maximum reuse_level is 3, check your config.')
+	return init_model
 
 def read_input_list(path):
 	with open(path, 'r') as f:
@@ -117,7 +146,9 @@ def get_CLI_parser():
 						help='The input file, see input format for each work mode.')
 	parser.add_argument('-o', type=str, default=None,
 						help='The output file, see output format for each work mode.')
-	parser.add_argument('-conf', type=str, default=None, help="The path to save temperature files.")
+	parser.add_argument('-cfg', type=str, default=None,
+						help='The config.ini file.')
+	parser.add_argument('-tmp', type=str, default=None, help="The path to save temperature files.")
 	parser.add_argument('-p', type=int, default=1, help='The number of processors to use.')
 	parser.add_argument('-otlg', type=str, default=None, help='The path to microbiome ontology.')
 	parser.add_argument('-labels', type=str, default=None, help='The path to npz file '
