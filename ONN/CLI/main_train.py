@@ -33,11 +33,18 @@ def train(args):
 	stop_patience = cfg.getint('train', 'stop_patience')
 	label_smoothing = cfg.getfloat('train', 'label_smoothing')
 	batch_size = cfg.getint('train', 'batch_size')
+	use_sgd = cfg.getboolean('train', 'use_sgd')
 
 	warmup_logger = CSVLogger(filename=args.log)
 	logger = CSVLogger(filename=args.log, append=True)
 	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=min_lr)
 	stopper = EarlyStopping(patience=stop_patience, verbose=5, restore_best_weights=True)
+	if use_sgd:
+		w_optimizer = SGD(lr=warmup_lr, momentum=0.9, nesterov=True)
+		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
+	else:
+		w_optimizer = Adam(lr=warmup_lr)
+		optimizer = Adam(lr=lr)
 
 	_, layer_units = parse_otlg(args.otlg)			   # sources and layer units
 	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1)) for i, y in enumerate(Y_train)]
@@ -46,7 +53,7 @@ def train(args):
 	with strategy.scope():
 		model = Model(layer_units=layer_units, num_features=X_train.shape[1])
 		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
-		model.compile(optimizer=Adam(lr=warmup_lr),
+		model.compile(optimizer=w_optimizer,
 					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
 					  loss_weights=layer_units, 
 					  metrics='acc')
@@ -60,7 +67,7 @@ def train(args):
 	
 	with strategy.scope():
 		print('Training using optimizer with lr={}...'.format(lr))
-		model.compile(optimizer=Adam(lr=lr),
+		model.compile(optimizer=optimizer,
 					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
 					  loss_weights=layer_units, 
 					  metrics='acc')
