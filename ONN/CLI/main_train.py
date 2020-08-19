@@ -39,7 +39,7 @@ def train(args):
 
 	strategy = MirroredStrategy()
 	with strategy.scope():
-		model = Model(layer_units=layer_units)
+		model = Model(layer_units=layer_units, num_features=X_train.shape[1])
 		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
 		model.compile(optimizer=Adam(lr=warmup_lr), loss=CategoricalCrossentropy(from_logits=True, label_smoothing=0.2),
 					  loss_weights=layer_units, 
@@ -48,6 +48,8 @@ def train(args):
 			  sample_weight=sample_weight, 
 			  callbacks=[warmup_logger])
 
+	with open('/data2/public/chonghui_backup/model_summary.txt', 'w') as f:
+		model.summary(print_fn=lambda x: f.write(x + '\n'))
 	model.summary()
 	
 	with strategy.scope():
@@ -59,3 +61,4 @@ def train(args):
 			  initial_epoch=warmup_ep, sample_weight=sample_weight, 
 			  callbacks=[logger, lrreducer, stopper])
 	model.save_blocks(args.o)
+	model = Model(restore_from=args.o)
