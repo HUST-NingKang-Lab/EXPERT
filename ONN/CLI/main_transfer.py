@@ -31,7 +31,7 @@ def transfer(args):
 	new_mapper = cfg.getboolean('transfer', 'new_mapper')
 	reuse_levels = cfg.get('transfer', 'reuse_levels')
 	finetune_eps = cfg.getint('transfer', 'finetune_epochs')
-	finetune_lr = cfg.getint('transfer', 'finetune_lr')
+	finetune_lr = cfg.getfloat('transfer', 'finetune_lr')
 	warmup_eps = cfg.getint('transfer', 'warmup_epochs')
 	epochs = cfg.getint('transfer', 'epochs')
 	warmup_lr = cfg.getfloat('transfer', 'warmup_lr')
@@ -68,7 +68,7 @@ def transfer(args):
 		model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
 		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
 		model.compile(optimizer=w_optimizer,
-					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
+					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
 					  loss_weights=layer_units,
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=warmup_eps,
@@ -79,7 +79,7 @@ def transfer(args):
 	with strategy.scope():
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
-					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
+					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
 					  loss_weights=layer_units,
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
@@ -98,7 +98,7 @@ def transfer(args):
 				model.spec_integs[layer].trainable = True
 				model.spec_outputs[layer].trainable = True
 			model.compile(optimizer=f_optimizer,
-						  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
+						  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
 						  loss_weights=layer_units,
 						  metrics='acc')
 		model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=finetune_eps,

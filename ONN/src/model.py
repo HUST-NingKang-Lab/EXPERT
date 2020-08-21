@@ -60,14 +60,14 @@ class Model(tf.keras.Model):
 		block = tf.keras.Sequential(name='base')
 		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('linear')) # (1000, 4, 64) -> 256000
+		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
 		block.add(Conv2D(64, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
 		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
-		block.add(Activation('linear')) # (1000, 2, 128) -> 256000
-		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Activation('relu')) # (1000, 2, 128) -> 256000
+		block.add(Conv2D(256, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
 		block.add(Conv2D(1, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
@@ -82,7 +82,7 @@ class Model(tf.keras.Model):
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc0', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform))
@@ -96,11 +96,7 @@ class Model(tf.keras.Model):
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		'''block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc0', use_bias=False,
-						kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))'''
-		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(k) + '_integ_fc1', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc0', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
@@ -109,22 +105,21 @@ class Model(tf.keras.Model):
 	def init_output_block(self, index, name, n_units):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
-		'''block.add(Dense(self._get_n_units(n_units*4), name='l' + str(index) + '_out_fc0', use_bias=False,
+		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc0', use_bias=False,
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc1', use_bias=False,
-						kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc2', use_bias=False,
-						kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))'''
-		block.add(Dropout(0.7))
+		block.add(Dropout(self._get_dropout_rate(self._get_n_units(n_units*2), n_units)))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
+
+	def _get_dropout_rate(self, last_n_units, next_n_units):
+		prop = (last_n_units - next_n_units) / last_n_units
+		scale_0208 = lambda prop: 0.2 + (prop - 0.5) / 0.25 * 0.6
+		prop_scaled = scale_0208(prop)
+		print('_get_dropout_rate: ', prop_scaled)
+		return prop_scaled
 
 	def init_post_proc_layer(self, name):
 		def scale_output(x):
