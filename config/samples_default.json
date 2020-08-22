@@ -1,0 +1,127 @@
+{
+    "data": {
+        "type": "samples",
+        "id": "ERS453100",
+        "attributes": {
+            "latitude": 41.88,
+            "sample-metadata": [
+                {
+                    "key": "geographic location (longitude)",
+                    "unit": null,
+                    "value": "-87.63"
+                },
+                {
+                    "key": "geographic location (country and/or sea,region)",
+                    "unit": null,
+                    "value": "GAZ:United States of America"
+                },
+                {
+                    "key": "environment (biome)",
+                    "unit": null,
+                    "value": "ENVO:urban biome"
+                },
+                {
+                    "key": "environment (feature)",
+                    "unit": null,
+                    "value": "ENVO:anthropogenic environmental material"
+                },
+                {
+                    "key": "environment (material)",
+                    "unit": null,
+                    "value": "ENVO:dust"
+                },
+                {
+                    "key": "altitude",
+                    "unit": null,
+                    "value": "0.0"
+                },
+                {
+                    "key": "depth",
+                    "unit": null,
+                    "value": "0.0"
+                },
+                {
+                    "key": "elevation",
+                    "unit": null,
+                    "value": "181.0"
+                },
+                {
+                    "key": "geographic location (latitude)",
+                    "unit": null,
+                    "value": "41.88"
+                },
+                {
+                    "key": "instrument model",
+                    "unit": null,
+                    "value": "unspecified"
+                },
+                {
+                    "key": "ENA checklist",
+                    "unit": null,
+                    "value": "ERC000011"
+                },
+                {
+                    "key": "last update date",
+                    "unit": null,
+                    "value": "2018-03-09"
+                },
+                {
+                    "key": "host",
+                    "unit": null,
+                    "value": "human"
+                }
+            ],
+            "longitude": -87.63,
+            "biosample": "SAMEA2519568",
+            "accession": "ERS453100",
+            "analysis-completed": "2018-12-11",
+            "collection-date": null,
+            "geo-loc-name": "GAZ:United States of America",
+            "sample-desc": "H02a.Bathroom_Door_Knob",
+            "environment-biome": "ENVO:urban biome",
+            "environment-feature": "ENVO:anthropogenic environmental material",
+            "environment-material": "ENVO:dust",
+            "sample-name": "qiime_study_2192:H02a.Bathroom.Door.Knob.750",
+            "sample-alias": "qiime_study_2192:H02a.Bathroom.Door.Knob.750",
+            "host-tax-id": null,
+            "species": null,
+            "last-update": "2018-12-11T11:41:57"
+        },
+        "relationships": {
+            "studies": {
+                "data": [
+                    {
+                        "type": "studies",
+                        "id": "MGYS00003659",
+                        "links": {
+                            "self": "https://www.ebi.ac.uk/metagenomics/api/v1/studies/MGYS00003659"
+                        }
+                    }
+                ],
+                "meta": {
+                    "count": 1
+                },
+                "links": {
+                    "related": "https://www.ebi.ac.uk/metagenomics/api/v1/samples/ERS453100/studies"
+                }
+            },
+            "biome": {
+                "data": {
+                    "type": "biomes",
+                    "id": "root:Mixed"
+                },
+                "links": {
+                    "related": "https://www.ebi.ac.uk/metagenomics/api/v1/biomes/root:Mixed"
+                }
+            },
+            "runs": {
+                "links": {
+                    "related": "https://www.ebi.ac.uk/metagenomics/api/v1/samples/ERS453100/runs"
+                }
+            }
+        },
+        "links": {
+            "self": "https://www.ebi.ac.uk/metagenomics/api/v1/samples/ERS453100"
+        }
+    }
+}

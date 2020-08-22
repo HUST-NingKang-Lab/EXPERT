@@ -24,11 +24,13 @@ def train(args):
 	Y_train, Y_test = read_labels(args.labels, shuffle_idx=shuffle_idx, split_idx=args.split_idx,
 								  end_idx=args.end_idx, dmax=args.dmax)
 
-	warmup_ep = cfg.getint('train', 'warmup_epochs')
-	epochs = cfg.getint('train', 'epochs')
-	warmup_lr = cfg.getfloat('train', 'warmup_lr')
+	pretrain_ep = cfg.getint('train', 'pretrain_ep')
+	pretrain_lr = cfg.getfloat('train', 'pretrain_lr')
+	pretrain_stop_patience = cfg.getint('train', 'pretrain_stop_patience')
+
 	lr = cfg.getfloat('train', 'lr')
 	min_lr = cfg.getfloat('train', 'min_lr')
+	epochs = cfg.getint('train', 'epochs')
 	reduce_patience = cfg.getint('train', 'reduce_patience')
 	stop_patience = cfg.getint('train', 'stop_patience')
 	label_smoothing = cfg.getfloat('train', 'label_smoothing')
@@ -37,13 +39,13 @@ def train(args):
 
 	warmup_logger = CSVLogger(filename=args.log)
 	logger = CSVLogger(filename=args.log, append=True)
+	pretrain_stopper = EarlyStopping(patience=pretrain_stop_patience, verbose=5, restore_best_weights=True)
 	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=min_lr)
 	stopper = EarlyStopping(patience=stop_patience, verbose=5, restore_best_weights=True)
+	pretrain_opt = Adam(lr=pretrain_lr)
 	if use_sgd:
-		w_optimizer = SGD(lr=warmup_lr, momentum=0.9, nesterov=True)
 		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
 	else:
-		w_optimizer = Adam(lr=warmup_lr)
 		optimizer = Adam(lr=lr)
 
 	_, layer_units = parse_otlg(args.otlg)			   # sources and layer units
@@ -52,27 +54,27 @@ def train(args):
 	strategy = MirroredStrategy()
 	with strategy.scope():
 		model = Model(layer_units=layer_units, num_features=X_train.shape[1])
-		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
-		model.compile(optimizer=w_optimizer,
+		print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
+		model.compile(optimizer=pretrain_opt,
 					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
 					  #loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
 					  metrics='acc')
-	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=warmup_ep,
+	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=pretrain_ep,
 			  sample_weight=sample_weight, 
-			  callbacks=[warmup_logger])
+			  callbacks=[warmup_logger, pretrain_stopper])
 
 	with open('/data2/public/chonghui_backup/model_summary.txt', 'w') as f:
 		model.summary(print_fn=lambda x: f.write(x + '\n'))
 	model.summary()
 	
 	with strategy.scope():
+		epochs += pretrain_stopper.stopped_epoch
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
-					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
+					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
 					  #loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
-			  initial_epoch=warmup_ep, sample_weight=sample_weight, 
+			  initial_epoch=pretrain_stopper.stopped_epoch, sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
 	model.save_blocks(args.o)
-	model = Model(restore_from=args.o)
