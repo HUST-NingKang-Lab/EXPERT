@@ -45,11 +45,17 @@ def read_input_list(path):
 def runid_from_taxassign(path):
 	return pd.read_csv(path, sep='\t', nrows=1, index_col=0).columns.tolist()
 
-def format_sample_info(sample):
+def format_sample_info(sample_and_status):
+	sample = sample_and_status[0]
+	status = sample_and_status[1:3]
 	metadata = pd.DataFrame(nested_to_record(sample)['attributes.sample-metadata'])
 	metadata['key'] = metadata['key'] + metadata['unit'].apply(lambda x: '(unit: {})'.format(x) if x else '')
 	metadata = dict(zip(metadata['key'], metadata['value']))
 	metadata['Sample ID'] = sample['id']
+	metadata['Sample Name'] = sample['attributes']['sample-name']
+	metadata['Sample Description'] = sample['attributes']['sample-desc']
+	metadata['URL status'] = ','.join(status)
+	#print(metadata)
 	return metadata
 
 def read_matrices(path, split_idx, end_idx):

@@ -11,7 +11,7 @@ import urllib.request
 def download(args):
 	print('Setting proxies...')
 	proxy_dict = {'http': 'http://127.0.0.1:4780', 'https': 'https://127.0.0.1:4780'} # use customizable options
-	proxy_dict = {}
+	#proxy_dict = {}
 	proxy = urllib.request.ProxyHandler(proxy_dict)
 	opener = urllib.request.build_opener(proxy)
 	opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, '
@@ -38,7 +38,7 @@ def download(args):
 	filenames = tax_assigns['Name']
 	print('Retrieving metadata for runs...')
 	for index, runids_1d in enumerate(runids_2d):
-		samples = pd.DataFrame(par(delayed(find_and_format_sample)(runid) for runid in runids_1d))
+		samples = pd.DataFrame(par(delayed(find_and_format_sample)(runid) for runid in tqdm(runids_1d)))
 		samples['RunID'] = runids_1d
 		samples.to_csv(filenames[index].split('_')[0]+'_sample_information.tsv', sep='\t')
 
