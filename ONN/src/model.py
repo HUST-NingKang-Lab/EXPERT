@@ -109,14 +109,14 @@ class Model(tf.keras.Model):
 						kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dropout(self._get_dropout_rate(self._get_n_units(n_units*2), n_units)))
+		block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
 
-	def _get_dropout_rate(self, last_n_units, next_n_units):
+	def _get_dropout_rate(self, index, last_n_units, next_n_units):
 		prop = (last_n_units - next_n_units) / last_n_units
-		scale_0208 = lambda prop: 0.2 + (prop - 0.5) / 0.25 * 0.6
+		scale_0208 = lambda prop:  index / 10 + (prop - 0.5) / 0.25 * 0.4
 		prop_scaled = scale_0208(prop)
 		print('_get_dropout_rate: ', prop_scaled)
 		return prop_scaled

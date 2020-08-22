@@ -55,7 +55,7 @@ def train(args):
 		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
 		model.compile(optimizer=w_optimizer,
 					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-					  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
+					  #loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=warmup_ep,
 			  sample_weight=sample_weight, 
@@ -69,7 +69,7 @@ def train(args):
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
 					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
-					  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
+					  #loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
 			  initial_epoch=warmup_ep, sample_weight=sample_weight, 
