@@ -10,13 +10,13 @@ import urllib.request
 
 def download(args):
 	print('Setting proxies...')
-	proxy_dict = {'http': 'http://127.0.0.1:4780', 'https': 'https://127.0.0.1:4780'} # use customizable options
+	#proxy_dict = {'http': 'http://127.0.0.1:4780', 'https': 'https://127.0.0.1:4780'} # use customizable options
 	#proxy_dict = {}
-	proxy = urllib.request.ProxyHandler(proxy_dict)
-	opener = urllib.request.build_opener(proxy)
-	opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, '
-						  'like Gecko) Chrome/35.0.1916.153 Safari/537.36 SE 2.X MetaSr 1.0')]
-	urllib.request.install_opener(opener)
+	#proxy = urllib.request.ProxyHandler(proxy_dict)
+	#opener = urllib.request.build_opener(proxy)
+	#opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, '
+	#					  'like Gecko) Chrome/35.0.1916.153 Safari/537.36 SE 2.X MetaSr 1.0')]
+	#urllib.request.install_opener(opener)
 	out_dir = args.o
 	mg = MGnify()
 	par = Parallel(n_jobs=args.p, prefer='threads')

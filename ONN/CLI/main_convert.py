@@ -7,8 +7,8 @@ import os
 
 
 def convert(args):
-	if not os.path.isdir(args.conf):
-		os.mkdir(args.conf)
+	if not os.path.isdir(args.tmp):
+		os.mkdir(args.tmp)
 	print('running...')
 	print('Reading and concatenating data, this could be slow if you have huge amount of data')
 	with open(args.i, 'r') as f:
@@ -37,7 +37,7 @@ def convert(args):
 		tm.phylogeny.reset_index(drop=True).to_csv(tm.get_conf_savepath('phylogeny_by_transformer.csv'))
 	else:
 		phylo = pd.read_csv(args.phylo, index_col=0)
-		tm = Transformer(conf_path=args.conf, phylogeny=phylo, db_file=args.db)
+		tm = Transformer(conf_path=args.tmp, phylogeny=phylo, db_file=args.db)
 		matrix_by_rank = tm._extract_layers(matrix, included_ranks=included_ranks)
 		print('Saving results...')
 		for rank, matrix in matrix_by_rank.items():

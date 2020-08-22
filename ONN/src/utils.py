@@ -12,6 +12,7 @@ from ONN.src.model import Model
 
 def transfer_weights(base_model: Model, init_model: Model, new_mapper, reuse_levels):
 	init_model.base = base_model.base
+	init_model.base.trainable = False
 	if not new_mapper:
 		init_model.feature_mapper = base_model.feature_mapper
 		init_model.feature_mapper.trainable = False
