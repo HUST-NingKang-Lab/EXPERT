@@ -106,7 +106,7 @@ class Model(tf.keras.Model):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
 		#block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
-		block.add(Dropout(0.5))
+		#block.add(Dropout(0.5))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block

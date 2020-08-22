@@ -69,7 +69,7 @@ def transfer(args):
 		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
 		model.compile(optimizer=w_optimizer,
 					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-					  loss_weights=layer_units,
+					  #loss_weights=layer_units,
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=warmup_eps,
 			  sample_weight=sample_weight,
@@ -80,7 +80,7 @@ def transfer(args):
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
 					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-					  loss_weights=layer_units,
+					  #loss_weights=layer_units,
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
 			  initial_epoch=warmup_eps, sample_weight=sample_weight,
@@ -99,7 +99,7 @@ def transfer(args):
 				model.spec_outputs[layer].trainable = True
 			model.compile(optimizer=f_optimizer,
 						  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-						  loss_weights=layer_units,
+						  #loss_weights=layer_units,
 						  metrics='acc')
 		model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=finetune_eps,
 				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight,
