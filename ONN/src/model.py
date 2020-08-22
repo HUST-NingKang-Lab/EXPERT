@@ -70,7 +70,7 @@ class Model(tf.keras.Model):
 		block.add(Conv2D(256, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
-		block.add(Conv2D(1, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(2, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
 		block.add(Flatten()) # (1000, )
@@ -105,11 +105,8 @@ class Model(tf.keras.Model):
 	def init_output_block(self, index, name, n_units):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(index) + '_out_fc0', use_bias=False,
-						kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu'))
-		block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
+		#block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
+		block.add(Dropout(0.5))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
