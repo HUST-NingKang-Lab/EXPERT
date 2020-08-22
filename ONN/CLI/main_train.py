@@ -75,4 +75,3 @@ def train(args):
 			  initial_epoch=warmup_ep, sample_weight=sample_weight, 
 			  callbacks=[logger, lrreducer, stopper])
 	model.save_blocks(args.o)
-	model = Model(restore_from=args.o)
