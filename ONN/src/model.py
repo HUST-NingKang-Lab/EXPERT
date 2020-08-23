@@ -129,7 +129,7 @@ class Model(tf.keras.Model):
 		#block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
 		block.add(Dropout(0.5))
 		block.add(Dense(n_units, name='l' + str(index)))
-		block.add(Activation('sigmoid'))
+		#block.add(Activation('sigmoid'))
 		return block
 
 	def _get_dropout_rate(self, index, last_n_units, next_n_units):

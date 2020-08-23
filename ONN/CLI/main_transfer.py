@@ -32,16 +32,14 @@ def transfer(args):
 	reuse_levels = cfg.get('transfer', 'reuse_levels')
 	finetune_eps = cfg.getint('transfer', 'finetune_epochs')
 	finetune_lr = cfg.getfloat('transfer', 'finetune_lr')
-	warmup_eps = cfg.getint('transfer', 'warmup_epochs')
 	epochs = cfg.getint('transfer', 'epochs')
-	warmup_lr = cfg.getfloat('transfer', 'warmup_lr')
 	lr = cfg.getfloat('transfer', 'lr')
 	min_lr = cfg.getfloat('transfer', 'min_lr')
 	reduce_patience = cfg.getint('transfer', 'reduce_patience')
 	stop_patience = cfg.getint('transfer', 'stop_patience')
 	label_smoothing = cfg.getfloat('transfer', 'label_smoothing')
 	batch_size = cfg.getint('transfer', 'batch_size')
-	use_sgd = cfg.getboolean('train', 'use_sgd')
+	#use_sgd = cfg.getboolean('train', 'use_sgd')
 
 	warmup_logger = CSVLogger(filename=args.log)
 	logger = CSVLogger(filename=args.log, append=True)
@@ -51,12 +49,10 @@ def transfer(args):
 	_, layer_units = parse_otlg(args.otlg)  # sources and layer units
 	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1))
 					 for i, y in enumerate(Y_train)]
-	if use_sgd:
-		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
-		f_optimizer = SGD(lr=finetune_lr, momentum=0.9, nesterov=True)
-	else:
-		optimizer = Adam(lr=lr)
-		f_optimizer = Adam(lr=finetune_lr)
+	loss_weights = [units/sum(layer_units) for units in layer_units]
+
+	optimizer = Adam(lr=lr)
+	f_optimizer = Adam(lr=finetune_lr)
 
 	strategy = MirroredStrategy()
 	with strategy.scope():
@@ -67,27 +63,17 @@ def transfer(args):
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
 					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
-					  #loss_weights=layer_units,
+					  loss_weights=loss_weights,
 					  metrics='acc')
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
-			  callbacks=[warmup_logger])
-	model.summary()
-
-	with strategy.scope():
-		print('Training using optimizer with lr={}...'.format(lr))
-		model.compile(optimizer=optimizer,
-					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-					  #loss_weights=layer_units,
-					  metrics='acc')
-	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
-			  initial_epoch=warmup_eps, sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
+	model.summary()
 
 	if do_finetune:
 		finetune_eps += stopper.stopped_epoch
 		with strategy.scope():
-			print('Fine-tuning using optimizer with lr={}...'.format(lr))
+			print('Fine-tuning using optimizer with lr={}...'.format(finetune_lr))
 			model.fine_tune = True
 			model.feature_mapper.trainable = True
 			model.base.trainable = True
@@ -96,10 +82,14 @@ def transfer(args):
 				model.spec_integs[layer].trainable = True
 				model.spec_outputs[layer].trainable = True
 			model.compile(optimizer=f_optimizer,
-						  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-						  #loss_weights=layer_units,
+						  loss=CategoricalCrossentropy(from_logits=True,
+													   label_smoothing=label_smoothing),
+						  loss_weights=loss_weights,
 						  metrics='acc')
-		model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=finetune_eps,
+		model.fit(X_train, Y_train,
+				  validation_data=(X_test, Y_test),
+				  batch_size=batch_size,
+				  epochs=finetune_eps,
 				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight,
 				  callbacks=[logger, lrreducer, stopper])
 		model.save_blocks(args.o)

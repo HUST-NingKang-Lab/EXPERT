@@ -59,7 +59,7 @@ def train(args):
 		model = Model(layer_units=layer_units, num_features=X_train.shape[1])
 		print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 		model.compile(optimizer=pretrain_opt,
-					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
+					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
 					  loss_weights=loss_weights, 
 					  metrics=['acc'])
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=pretrain_ep,
@@ -75,7 +75,7 @@ def train(args):
 		epochs += pretrain_stopper.stopped_epoch
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
-					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
+					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
 					  loss_weights=loss_weights,
 					  metrics=['acc'])
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
