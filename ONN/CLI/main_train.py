@@ -39,9 +39,10 @@ def train(args):
 
 	warmup_logger = CSVLogger(filename=args.log)
 	logger = CSVLogger(filename=args.log, append=True)
-	pretrain_stopper = EarlyStopping(patience=pretrain_stop_patience, verbose=5, restore_best_weights=True)
-	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=min_lr)
-	stopper = EarlyStopping(patience=stop_patience, verbose=5, restore_best_weights=True)
+	pretrain_stopper = EarlyStopping(monitor='val_loss', patience=pretrain_stop_patience, verbose=5, 
+									 restore_best_weights=True)
+	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.2, min_lr=min_lr)
+	stopper = EarlyStopping(monitor='val_loss', patience=stop_patience, verbose=5, restore_best_weights=True)
 	pretrain_opt = Adam(lr=pretrain_lr)
 	if use_sgd:
 		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
@@ -50,6 +51,8 @@ def train(args):
 
 	_, layer_units = parse_otlg(args.otlg)			   # sources and layer units
 	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1)) for i, y in enumerate(Y_train)]
+	loss_weights = [units/sum(layer_units) for units in layer_units]
+	print('Loss weights: ', loss_weights)
 
 	strategy = MirroredStrategy()
 	with strategy.scope():
@@ -57,8 +60,8 @@ def train(args):
 		print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 		model.compile(optimizer=pretrain_opt,
 					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-					  #loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
-					  metrics='acc')
+					  loss_weights=loss_weights, 
+					  metrics=['acc'])
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=pretrain_ep,
 			  sample_weight=sample_weight, 
 			  callbacks=[warmup_logger, pretrain_stopper])
@@ -67,13 +70,14 @@ def train(args):
 		model.summary(print_fn=lambda x: f.write(x + '\n'))
 	model.summary()
 	
+	model.save_blocks(args.o+'pre_training')
 	with strategy.scope():
 		epochs += pretrain_stopper.stopped_epoch
 		print('Training using optimizer with lr={}...'.format(lr))
 		model.compile(optimizer=optimizer,
 					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
-					  #loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(), 
-					  metrics='acc')
+					  loss_weights=loss_weights,
+					  metrics=['acc'])
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
 			  initial_epoch=pretrain_stopper.stopped_epoch, sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])

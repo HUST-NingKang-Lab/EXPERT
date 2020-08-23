@@ -52,11 +52,9 @@ def transfer(args):
 	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1))
 					 for i, y in enumerate(Y_train)]
 	if use_sgd:
-		w_optimizer = SGD(lr=warmup_lr, momentum=0.9, nesterov=True)
 		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
 		f_optimizer = SGD(lr=finetune_lr, momentum=0.9, nesterov=True)
 	else:
-		w_optimizer = Adam(lr=warmup_lr)
 		optimizer = Adam(lr=lr)
 		f_optimizer = Adam(lr=finetune_lr)
 
@@ -66,12 +64,12 @@ def transfer(args):
 		init_model = Model(layer_units=layer_units, num_features=X_train.shape[1])
 		# All transferred blocks and layers will be set to be non-trainable automatically.
 		model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
-		print('Warming up training using optimizer with lr={}...'.format(warmup_lr))
-		model.compile(optimizer=w_optimizer,
-					  loss=CategoricalCrossentropy(from_logits=False, label_smoothing=label_smoothing),
+		print('Training using optimizer with lr={}...'.format(lr))
+		model.compile(optimizer=optimizer,
+					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
 					  #loss_weights=layer_units,
 					  metrics='acc')
-	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=warmup_eps,
+	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[warmup_logger])
 	model.summary()

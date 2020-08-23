@@ -29,7 +29,7 @@ class Model(tf.keras.Model):
 			# Avoiding Non-trainble params bug in tensorflow 2.3.0
 			self.feature_mapper.trainable = False
 			self.feature_mapper.trainable = True
-			self.base = self.init_base_block()
+			self.base = self.init_base_block1()
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
 													  n_units=n_units)
 							   for layer, n_units in enumerate(layer_units)]
@@ -56,6 +56,23 @@ class Model(tf.keras.Model):
 		block.add(self._init_bn_layer())
 		return block
 
+	def init_base_block1(self):
+		block = tf.keras.Sequential(name='base')
+		block.add(Conv2D(128, kernel_size=(1, 6), use_bias=False, kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Conv2D(2, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (1000, 1, 2) -> 128000
+		block.add(Flatten()) # (1000, )
+		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform, kernel_regularizer=tf.keras.regularizers.L2(l2=0.005)))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (512, )
+		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform, kernel_regularizer=tf.keras.regularizers.L2(l2=0.002)))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (512, )
+		return block
+
+
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base')
 		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform))
@@ -70,11 +87,12 @@ class Model(tf.keras.Model):
 		block.add(Conv2D(256, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
-		block.add(Conv2D(2, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(1, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform, 
+						kernel_regularizer=tf.keras.regularizers.L2(l2=0.001)))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -82,13 +100,16 @@ class Model(tf.keras.Model):
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(256, name='l' + str(k) + '_inter_fc0', use_bias=False, kernel_initializer=he_uniform, 
+						kernel_regularizer=tf.keras.regularizers.L2(l2=0.8/n_units)))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(128, name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform,
+						kernel_regularizer=tf.keras.regularizers.L2(l2=0.5/n_units)))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*2), name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_uniform))
+		block.add(Dense(64, name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_uniform, 
+						kernel_regularizer=tf.keras.regularizers.L2(l2=0.2/n_units)))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		return block
@@ -96,8 +117,8 @@ class Model(tf.keras.Model):
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_integ_fc0', use_bias=False,
-						kernel_initializer=he_uniform))
+		block.add(Dense(128, name='l' + str(k) + '_integ_fc0', use_bias=False,
+						kernel_initializer=he_uniform, kernel_regularizer=tf.keras.regularizers.L2(l2=0.5/n_units)))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		return block
@@ -106,7 +127,7 @@ class Model(tf.keras.Model):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
 		#block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
-		#block.add(Dropout(0.5))
+		block.add(Dropout(0.5))
 		block.add(Dense(n_units, name='l' + str(index)))
 		block.add(Activation('sigmoid'))
 		return block
