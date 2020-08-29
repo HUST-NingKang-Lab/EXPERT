@@ -4,6 +4,8 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization,
 import tensorflow as tf
 from collections import OrderedDict
 import numpy as np
+from tensorflow.keras.callbacks import *
+from tensorflow.keras import backend as K
 
 
 he_uniform = tf.keras.initializers.HeUniform(seed=0)
@@ -25,17 +27,20 @@ class Model(tf.keras.Model):
 		print('Set .fine_tune to True to protect BatchNormalization layers in base block when doing Fine-tuning')
 		if layer_units:
 			self.n_layers = len(layer_units)
+			
 			self.feature_mapper = self.init_mapper_block(num_features=num_features)
 			# Avoiding Non-trainble params bug in tensorflow 2.3.0
 			self.feature_mapper.trainable = False
 			self.feature_mapper.trainable = True
-			self.base = self.init_base_block1()
+			
+			self.base = self.init_base_block()
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
 													  n_units=n_units)
 							   for layer, n_units in enumerate(layer_units)]
 			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
+			
 			self.spec_outputs = [self.init_output_block(index=layer, name='l{}_output'.format(layer),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
@@ -50,6 +55,7 @@ class Model(tf.keras.Model):
 		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer))
 							   for layer in range(self.n_layers)]
 
+
 	def init_mapper_block(self, num_features): # map input feature to ...
 		block = tf.keras.Sequential(name='feature_mapper')
 		block.add(Mapper(num_features=num_features, name='feature_mapper_layer'))
@@ -58,16 +64,20 @@ class Model(tf.keras.Model):
 
 	def init_base_block1(self):
 		block = tf.keras.Sequential(name='base')
-		block.add(Conv2D(128, kernel_size=(1, 6), use_bias=False, kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Conv2D(2, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 1, 2) -> 128000
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform, kernel_regularizer=tf.keras.regularizers.L2(l2=0.005)))
+		block.add(Dense(4096,  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(512, use_bias=False, kernel_initializer=he_uniform, kernel_regularizer=tf.keras.regularizers.L2(l2=0.002)))
+		block.add(Dense(2048,  kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (512, )
+		block.add(Dense(2048,  kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (512, )
+		block.add(Dense(1024,  kernel_initializer=he_uniform))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (512, )
+		block.add(Dense(1024,  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -75,24 +85,23 @@ class Model(tf.keras.Model):
 
 	def init_base_block(self):
 		block = tf.keras.Sequential(name='base')
-		block.add(Conv2D(64, kernel_size=(1, 3), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(128, kernel_size=(1, 3),  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
-		block.add(Conv2D(64, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(128, kernel_size=(1, 2),  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
-		block.add(Conv2D(128, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(128, kernel_size=(1, 2),  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 2, 128) -> 256000
-		block.add(Conv2D(256, kernel_size=(1, 2), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(256, kernel_size=(1, 2),  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
-		block.add(Conv2D(1, kernel_size=(1, 1), use_bias=False, kernel_initializer=he_uniform))
+		block.add(Conv2D(2, kernel_size=(1, 1),  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(1024, use_bias=False, kernel_initializer=he_uniform, 
-						kernel_regularizer=tf.keras.regularizers.L2(l2=0.001)))
+		block.add(Dense(2048,  kernel_initializer=he_uniform))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -100,44 +109,52 @@ class Model(tf.keras.Model):
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(256, name='l' + str(k) + '_inter_fc0', use_bias=False, kernel_initializer=he_uniform, 
-						kernel_regularizer=tf.keras.regularizers.L2(l2=0.8/n_units)))
-		block.add(self._init_bn_layer())
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0',  kernel_initializer=he_uniform))
 		block.add(Activation('relu'))
-		block.add(Dense(128, name='l' + str(k) + '_inter_fc1', use_bias=False, kernel_initializer=he_uniform,
-						kernel_regularizer=tf.keras.regularizers.L2(l2=0.5/n_units)))
-		block.add(self._init_bn_layer())
+		#block.add(Dropout(0.5))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1',  kernel_initializer=he_uniform))
 		block.add(Activation('relu'))
-		block.add(Dense(64, name='l' + str(k) + '_inter_fc2', use_bias=False, kernel_initializer=he_uniform, 
-						kernel_regularizer=tf.keras.regularizers.L2(l2=0.2/n_units)))
-		block.add(self._init_bn_layer())
+		#block.add(Dropout(0.5))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc2',  kernel_initializer=he_uniform))
 		block.add(Activation('relu'))
+		#block.add(Dropout(0.5))
 		return block
 
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(128, name='l' + str(k) + '_integ_fc0', use_bias=False,
-						kernel_initializer=he_uniform, kernel_regularizer=tf.keras.regularizers.L2(l2=0.5/n_units)))
-		block.add(self._init_bn_layer())
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc0', kernel_initializer=he_uniform))
+		#block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		return block
 
 	def init_output_block(self, index, name, n_units):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		block = tf.keras.Sequential(name=name)
-		#block.add(Dropout(self._get_dropout_rate(index+1, self._get_n_units(n_units*2), n_units)))
-		block.add(Dropout(0.5))
+		k = index
+		#block.add(Dropout(0.7))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc0', kernel_initializer=he_uniform))
+		block.add(Activation('relu'))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc1', kernel_initializer=he_uniform))
+		block.add(Activation('relu'))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc2', kernel_initializer=he_uniform))
+		block.add(Activation('relu'))
+		#block.add(Dropout(0.5))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_uniform))
+		block.add(Activation('relu'))
+		#block.add(Dropout(0.7))
 		block.add(Dense(n_units, name='l' + str(index)))
-		#block.add(Activation('sigmoid'))
 		return block
 
 	def _get_dropout_rate(self, index, last_n_units, next_n_units):
 		prop = (last_n_units - next_n_units) / last_n_units
-		scale_0208 = lambda prop:  index / 10 + (prop - 0.5) / 0.25 * 0.4
-		prop_scaled = scale_0208(prop)
+		scale_0206 = lambda prop:  0.2 + (prop - 0.5) / 0.25 * 0.4
+		prop_scaled = scale_0206(prop)
 		print('_get_dropout_rate: ', prop_scaled)
 		return prop_scaled
+
+	def _init_bn_layer(self):
+		return BatchNormalization(momentum=0.9)
 
 	def init_post_proc_layer(self, name):
 		def scale_output(x):
@@ -148,16 +165,14 @@ class Model(tf.keras.Model):
 			return scaled_contrib
 		return Lambda(scale_output, name=name)
 
-	def _init_bn_layer(self):
-		return BatchNormalization(momentum=0.9)
-
 	def call(self, inputs, training=False):
 		inputs = self.feature_mapper(inputs)
 		inputs = self.expand_dims(inputs, axis=3)
 		base = self.base(inputs, training=training if self.fine_tune == False else False)
 		inter_logits = [self.spec_inters[i](base, training=training) for i in range(self.n_layers)]
-
+		
 		integ_logits = []
+		
 		for layer in range(self.n_layers):
 			if layer == 0:
 				integ_logits.append(self.spec_integs[layer](inter_logits[layer], training=training))
@@ -165,15 +180,15 @@ class Model(tf.keras.Model):
 				integ_logits.append(self.spec_integs[layer](self.concat([integ_logits[layer-1],
 																		 inter_logits[layer]]),
 													  training=training))
-
+		
 		out_logits = [self.spec_outputs[i](integ_logits[i],
 										   training=training)
 					  for i in range(self.n_layers)]
 
-		#outputs = {'output_'+str(i): self.spec_postprocs[i](out_logits[i], training=training)
-		#		   for i in range(self.n_layers)}
 		outputs = [self.spec_postprocs[i](out_logits[i], training=training)
 				   for i in range(self.n_layers)]
+		#outputs = out_logits
+		
 		if self.n_layers == 5:
 			l1, l2, l3, l4, l5 = tuple(outputs)
 			return l1, l2, l3, l4, l5
@@ -190,7 +205,10 @@ class Model(tf.keras.Model):
 			l1 = outputs[0]
 			return l1
 		else:
-			return self.concat(outputs)
+			return self.concat(outputs)	
+		
+		
+		return self.concat(outputs)
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
@@ -250,3 +268,134 @@ class Mapper(Layer): # A PCA learner
 		config = super(Mapper, self).get_config()
 		config.update({"num_features": self.num_features})
 		return config
+
+
+class CyclicLR(Callback):
+    """This callback implements a cyclical learning rate policy (CLR).
+    The method cycles the learning rate between two boundaries with
+    some constant frequency, as detailed in this paper (https://arxiv.org/abs/1506.01186).
+    The amplitude of the cycle can be scaled on a per-iteration or 
+    per-cycle basis.
+    This class has three built-in policies, as put forth in the paper.
+    "triangular":
+        A basic triangular cycle w/ no amplitude scaling.
+    "triangular2":
+        A basic triangular cycle that scales initial amplitude by half each cycle.
+    "exp_range":
+        A cycle that scales initial amplitude by gamma**(cycle iterations) at each 
+        cycle iteration.
+    For more detail, please see paper.
+    
+    # Example
+        ```python
+            clr = CyclicLR(base_lr=0.001, max_lr=0.006,
+                                step_size=2000., mode='triangular')
+            model.fit(X_train, Y_train, callbacks=[clr])
+        ```
+    
+    Class also supports custom scaling functions:
+        ```python
+            clr_fn = lambda x: 0.5*(1+np.sin(x*np.pi/2.))
+            clr = CyclicLR(base_lr=0.001, max_lr=0.006,
+                                step_size=2000., scale_fn=clr_fn,
+                                scale_mode='cycle')
+            model.fit(X_train, Y_train, callbacks=[clr])
+        ```    
+    # Arguments
+        base_lr: initial learning rate which is the
+            lower boundary in the cycle.
+        max_lr: upper boundary in the cycle. Functionally,
+            it defines the cycle amplitude (max_lr - base_lr).
+            The lr at any cycle is the sum of base_lr
+            and some scaling of the amplitude; therefore 
+            max_lr may not actually be reached depending on
+            scaling function.
+        step_size: number of training iterations per
+            half cycle. Authors suggest setting step_size
+            2-8 x training iterations in epoch.
+        mode: one of {triangular, triangular2, exp_range}.
+            Default 'triangular'.
+            Values correspond to policies detailed above.
+            If scale_fn is not None, this argument is ignored.
+        gamma: constant in 'exp_range' scaling function:
+            gamma**(cycle iterations)
+        scale_fn: Custom scaling policy defined by a single
+            argument lambda function, where 
+            0 <= scale_fn(x) <= 1 for all x >= 0.
+            mode paramater is ignored 
+        scale_mode: {'cycle', 'iterations'}.
+            Defines whether scale_fn is evaluated on 
+            cycle number or cycle iterations (training
+            iterations since start of cycle). Default is 'cycle'.
+    """
+
+    def __init__(self, base_lr=0.001, max_lr=0.006, step_size=2000., mode='triangular',
+                 gamma=1., scale_fn=None, scale_mode='cycle'):
+        super(CyclicLR, self).__init__()
+
+        self.base_lr = base_lr
+        self.max_lr = max_lr
+        self.step_size = step_size
+        self.mode = mode
+        self.gamma = gamma
+        if scale_fn == None:
+            if self.mode == 'triangular':
+                self.scale_fn = lambda x: 1.
+                self.scale_mode = 'cycle'
+            elif self.mode == 'triangular2':
+                self.scale_fn = lambda x: 1/(2.**(x-1))
+                self.scale_mode = 'cycle'
+            elif self.mode == 'exp_range':
+                self.scale_fn = lambda x: gamma**(x)
+                self.scale_mode = 'iterations'
+        else:
+            self.scale_fn = scale_fn
+            self.scale_mode = scale_mode
+        self.clr_iterations = 0.
+        self.trn_iterations = 0.
+        self.history = {}
+
+        self._reset()
+
+    def _reset(self, new_base_lr=None, new_max_lr=None,
+               new_step_size=None):
+        """Resets cycle iterations.
+        Optional boundary/step size adjustment.
+        """
+        if new_base_lr != None:
+            self.base_lr = new_base_lr
+        if new_max_lr != None:
+            self.max_lr = new_max_lr
+        if new_step_size != None:
+            self.step_size = new_step_size
+        self.clr_iterations = 0.
+        
+    def clr(self):
+        cycle = np.floor(1+self.clr_iterations/(2*self.step_size))
+        x = np.abs(self.clr_iterations/self.step_size - 2*cycle + 1)
+        if self.scale_mode == 'cycle':
+            return self.base_lr + (self.max_lr-self.base_lr)*np.maximum(0, (1-x))*self.scale_fn(cycle)
+        else:
+            return self.base_lr + (self.max_lr-self.base_lr)*np.maximum(0, (1-x))*self.scale_fn(self.clr_iterations)
+        
+    def on_train_begin(self, logs={}):
+        logs = logs or {}
+
+        if self.clr_iterations == 0:
+            K.set_value(self.model.optimizer.lr, self.base_lr)
+        else:
+            K.set_value(self.model.optimizer.lr, self.clr())        
+            
+    def on_batch_end(self, epoch, logs=None):
+        
+        logs = logs or {}
+        self.trn_iterations += 1
+        self.clr_iterations += 1
+
+        self.history.setdefault('lr', []).append(K.get_value(self.model.optimizer.lr))
+        self.history.setdefault('iterations', []).append(self.trn_iterations)
+
+        for k, v in logs.items():
+            self.history.setdefault(k, []).append(v)
+        
+        K.set_value(self.model.optimizer.lr, self.clr())
