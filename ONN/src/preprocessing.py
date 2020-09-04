@@ -185,7 +185,7 @@ class NCBITaxa(object):
 		name1 = {name for name, _ in self.db.execute(command1).fetchall()}
 		missing = set(entries.tolist()) - name1
 		if missing:
-			joined_missing = ','.join(pd.Series(missing).apply(lambda x: '"' + x + '"'))
+			joined_missing = ','.join(pd.Series(list(missing)).apply(lambda x: '"' + x + '"'))
 			command2 = 'select spname, taxid from synonym where spname IN ({})'.format(joined_missing)
 			name2 = {name for name, _ in self.db.execute(command2).fetchall()}
 		else:
