@@ -191,7 +191,6 @@ class NCBITaxa(object):
 		else:
 			name2 = {}
 		name = name1.union(name2)
-		print(name)
 		if name == set([]):
 			in_db = pd.Series(False, index=entries.index)
 			return in_db
