@@ -14,7 +14,7 @@ def train(args):
 	cfg = ConfigParser()
 	cfg.read(args.cfg)
 	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-	os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+	os.environ["CUDA_VISIBLE_DEVICES"] = cfg.get('train', 'gpu')
 	gpus = tf.config.list_physical_devices('GPU')
 	for gpu in gpus:
 		tf.config.experimental.set_memory_growth(gpu, True)
