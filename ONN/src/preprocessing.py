@@ -179,18 +179,19 @@ class NCBITaxa(object):
 		else:
 			return source
 
-	def entries_in_db(self, entries: pd.Series):
-		joined_names = ','.join(entries.apply(lambda x: '"'+x+'"'))
+	def entries_in_db(self, entries):
+		joined_names = ','.join(map(lambda x: '"{}"'.format(x), entries))
 		command1 = 'select spname, taxid FROM species WHERE spname IN ({})'.format(joined_names)
 		name1 = {name for name, _ in self.db.execute(command1).fetchall()}
-		missing = set(entries.tolist()) - name1
+		missing = set(entries) - name1
 		if missing:
-			joined_missing = ','.join(pd.Series(list(missing)).apply(lambda x: '"' + x + '"'))
+			joined_missing = ','.join(map(lambda x: '"{}"'.format(x), missing))
 			command2 = 'select spname, taxid from synonym where spname IN ({})'.format(joined_missing)
 			name2 = {name for name, _ in self.db.execute(command2).fetchall()}
 		else:
 			name2 = {}
 		name = name1.union(name2)
+		print(name)
 		if name == set([]):
 			in_db = pd.Series(False, index=entries.index)
 			return in_db
@@ -235,7 +236,7 @@ class NCBITaxa(object):
 		joined_names = ','.join( map( lambda x: '"'+x+'"', names) )
 		command = 'select spname, taxid FROM species WHERE spname IN ({})'.format(joined_names)
 		name2id = {name: id for name, id in self.db.execute(command).fetchall()}
-		missing = set(names.tolist()) - set(name2id.keys())
+		missing = set(names) - set(name2id.keys())
 		if missing:
 			joined_missing = ','.join(map(lambda x: '"{}"'.format(x), missing))
 			command2 = 'select spname, taxid from synonym where spname IN ({})'.format(joined_missing)
