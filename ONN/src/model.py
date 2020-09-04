@@ -284,7 +284,7 @@ class Encoder(Layer):
 	def get_W(self, taxons):
 		cols = taxons.to_numpy().reshape(taxons.shape[0], 1)
 		rows = taxons.to_numpy().reshape(1, taxons.shape[0])
-		return tf.constant((rows == cols).astype(np.uint))
+		return tf.constant((rows == cols).astype(np.float32))
 
 	def call(self, inputs):
 		F_genus = inputs
