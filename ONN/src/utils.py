@@ -79,8 +79,8 @@ def read_genus_abu(path, split_idx, end_idx):
 	idx = np.arange(genus_abu.shape[0])
 	np.random.seed(0)
 	np.random.shuffle(idx)
-	genus_abu = genus_abu[idx]
-	return genus_abu[0:split_idx], genus_abu[split_idx:end_idx], idx
+	genus_abu = genus_abu.iloc[idx, :]
+	return genus_abu.iloc[0:split_idx, :], genus_abu.iloc[split_idx:end_idx, :], idx
 
 def read_labels(path, shuffle_idx, split_idx, end_idx, dmax):
 	# unk should be generated in map op, not here remember to fix
