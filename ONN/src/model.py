@@ -22,6 +22,11 @@ class Model(tf.keras.Model):
 		"""
 		# init Keras Model
 		super(Model, self).__init__()
+		
+		self.expand_dims = tf.expand_dims
+		self.concat = Concatenate(axis=1)
+		self.concat_a2 = Concatenate(axis=2)
+	
 		# fine tune flag
 		self.fine_tune = False
 		print('Set .fine_tune to True to protect BatchNormalization layers in base block when doing Fine-tuning')
@@ -32,7 +37,7 @@ class Model(tf.keras.Model):
 			# Avoiding Non-trainble params bug in tensorflow 2.3.0
 			self.feature_mapper.trainable = False
 			self.feature_mapper.trainable = True'''
-			self.encoder = self.init_encoder(phylogeny)
+			self.encoder = self.init_encoder_block(phylogeny)
 			self.base = self.init_base_block()
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
 													  n_units=n_units)
@@ -50,8 +55,6 @@ class Model(tf.keras.Model):
 		else:
 			raise ValueError('Please given correct model path to restore, '
 							 'or specify layer_units to build model from scratch.')
-		self.expand_dims = tf.expand_dims
-		self.concat = Concatenate(axis=1)
 		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer))
 							   for layer in range(self.n_layers)]
 
@@ -87,18 +90,18 @@ class Model(tf.keras.Model):
 		return block
 
 	def init_base_block(self):
-		x = Input()                                        # batch_size * num_features * 6
+		x = Input(shape=(1665, 6, 1))                                        # batch_size * num_features * 6
 		x1 = Conv2D(128, kernel_size=(1, 3), kernel_initializer=he_init)(x) # 4
 		x2 = Conv2D(128, kernel_size=(1, 4), kernel_initializer=he_init)(x) # 3
 		x3 = Conv2D(128, kernel_size=(1, 5), kernel_initializer=he_init)(x) # 2
 		x4 = Conv2D(128, kernel_size=(1, 6), kernel_initializer=he_init)(x) # 1
-		xc = (self.concat([x1, x2, x3, x4], axis=2))
+		xc = self.concat_a2([x1, x2, x3, x4])
 		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 10 * 128
 		xc = Conv2D(32, kernel_size=(1, 10), kernel_initializer=he_init)(xc)
 		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 32
 		xc = Conv2D(4, kernel_size=(1, 1), kernel_initializer=he_init)(xc)
 		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 4
-		xc = Flatten(xc)
+		xc = Flatten()(xc)
 		xc = Dense(1024, kernel_initializer=he_init)(xc)
 		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * 1024
 		model = tf.keras.Model(x, xc)
@@ -166,7 +169,8 @@ class Model(tf.keras.Model):
 
 	def call(self, inputs, training=False):
 		inputs = self.encoder(inputs)
-		base = self.base(inputs, training=training if self.fine_tune == False else False)
+		inputs_4d = self.expand_dims(inputs, axis=3)
+		base = self.base(inputs_4d, training=training if self.fine_tune == False else False)
 		inter_logits = [self.spec_inters[i](base, training=training) for i in range(self.n_layers)]
 		
 		integ_logits = []
