@@ -181,8 +181,16 @@ class NCBITaxa(object):
 
 	def entries_in_db(self, entries: pd.Series):
 		joined_names = ','.join(entries.apply(lambda x: '"'+x+'"'))
-		command = 'select spname, taxid FROM species WHERE spname IN ({})'.format(joined_names)
-		name = {name for name, _ in self.db.execute(command).fetchall()}
+		command1 = 'select spname, taxid FROM species WHERE spname IN ({})'.format(joined_names)
+		name1 = {name for name, _ in self.db.execute(command1).fetchall()}
+		missing = set(entries.tolist()) - name1
+		if missing:
+			joined_missing = ','.join(pd.Series(missing).apply(lambda x: '"' + x + '"'))
+			command2 = 'select spname, taxid from synonym where spname IN ({})'.format(joined_missing)
+			name2 = {name for name, _ in self.db.execute(command2).fetchall()}
+		else:
+			name2 = {}
+		name = name1.union(name2)
 		if name == set([]):
 			in_db = pd.Series(False, index=entries.index)
 			return in_db
@@ -199,7 +207,7 @@ class NCBITaxa(object):
 		lineages = pd.Series([id2lineage[id].split(',') for id in ids])
 		ranks2lineages = lineages.apply(lambda x: dict(zip(self.get_ranks_from_ids(x), x) ) )
 		# simpler below
-		#print(ranks2lineages)
+		# print(ranks2lineages)
 		table = pd.DataFrame(ranks2lineages.tolist(),
 							 index=np.arange(ranks2lineages.shape[0]),
 							 columns=include_ranks)
@@ -227,6 +235,14 @@ class NCBITaxa(object):
 		joined_names = ','.join( map( lambda x: '"'+x+'"', names) )
 		command = 'select spname, taxid FROM species WHERE spname IN ({})'.format(joined_names)
 		name2id = {name: id for name, id in self.db.execute(command).fetchall()}
+		missing = set(names.tolist()) - set(name2id.keys())
+		if missing:
+			joined_missing = ','.join(map(lambda x: '"{}"'.format(x), missing))
+			command2 = 'select spname, taxid from synonym where spname IN ({})'.format(joined_missing)
+			name2id_missing = {name: id for name, id in self.db.execute(command2).fetchall()}
+		else:
+			name2id_missing = {}
+		name2id = {**name2id, **name2id_missing}
 		names = [name2id[name] for name in names]
 		return names
 

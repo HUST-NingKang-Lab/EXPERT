@@ -37,4 +37,4 @@ def select(args):
 		print('New phylogeny:')
 		print(new_phylo)
 		matrix_genus.loc[new_phylo['genus'], :].to_hdf(args.o, key='genus')
-		new_phylo.to_csv(os.path.join(args.tmp, 'phylogeny_selected_using_variance_C{}.csv'.format(C)))
+		new_phylo.to_csv(os.path.join(args.tmp, 'phylogeny_selected_using_varianceThreshold_C{}.csv'.format(C)))

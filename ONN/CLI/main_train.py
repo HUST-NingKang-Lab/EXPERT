@@ -1,15 +1,12 @@
 from ONN.src.model import Model, CyclicLR
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
-from ONN.src.utils import read_matrices, read_labels, parse_otlg
+from ONN.src.utils import read_genus_abu, read_matrices, read_labels, parse_otlg
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop
-from tensorflow.keras.metrics import AUC
 from sklearn.utils.class_weight import compute_sample_weight
-import numpy as np
 from tensorflow.distribute import MirroredStrategy
-import tensorflow as tf
-import os
 from configparser import ConfigParser
+import tensorflow as tf, numpy as np, pandas as pd, os
 import tensorflow.keras.backend as K
 
 
@@ -20,9 +17,9 @@ def train(args):
 	os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
 	gpus = tf.config.list_physical_devices('GPU')
 	for gpu in gpus:
-	   tf.config.experimental.set_memory_growth(gpu, True)
+		tf.config.experimental.set_memory_growth(gpu, True)
 
-	X_train, X_test, shuffle_idx = read_matrices(args.i, split_idx=args.split_idx, end_idx=args.end_idx)
+	X_train, X_test, shuffle_idx = read_genus_abu(args.i, split_idx=args.split_idx, end_idx=args.end_idx)
 	Y_train, Y_test = read_labels(args.labels, shuffle_idx=shuffle_idx, split_idx=args.split_idx,
 								  end_idx=args.end_idx, dmax=args.dmax)
 
@@ -38,14 +35,16 @@ def train(args):
 	batch_size = cfg.getint('train', 'batch_size')
 	use_sgd = cfg.getboolean('train', 'use_sgd')
 
-	warmup_logger = CSVLogger(filename=args.log)
-	logger = CSVLogger(filename=args.log)
-	pretrain_stopper = EarlyStopping(monitor='val_loss', patience=pretrain_stop_patience, verbose=5, 
+	pretrain_logger = CSVLogger(filename=args.log)
+	pretrain_stopper = EarlyStopping(monitor='val_loss', patience=pretrain_stop_patience, verbose=5,
 									 restore_best_weights=True)
+
+	logger = CSVLogger(filename=args.log)
 	lrreducer = ReduceLROnPlateau(monitor='val_loss', patience=reduce_patience, verbose=5, factor=0.1)
 	stopper = EarlyStopping(monitor='val_loss', patience=stop_patience, verbose=5, restore_best_weights=True)
 	clr = CyclicLR(base_lr=pretrain_lr, max_lr=0.01, step_size=100., mode='exp_range', gamma=0.99994)	
 
+	phylogeny = pd.read_csv(args.phylo, index_col=0)
 	pretrain_opt = Adam(lr=pretrain_lr, clipvalue=50)
 	if use_sgd:
 		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
@@ -69,22 +68,22 @@ def train(args):
 	loss_weights = loss_weights.tolist()
 	print('Loss weights: ', loss_weights)
 
-	model = Model(layer_units=layer_units, num_features=X_train.shape[1])
+	model = Model(phylogeny=phylogeny, layer_units=layer_units, num_features=X_train.shape[1])
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 	model.compile(optimizer=pretrain_opt,
-				  loss='mse',#CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
-				  loss_weights=[layer_units, loss_weights][1], 
+				  loss='mse',
+				  loss_weights=[layer_units, loss_weights][0],
 				  metrics=[r2])
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), 
 			  batch_size=batch_size, epochs=pretrain_ep,
 			  #sample_weight=sample_weight, 
-			  callbacks=[logger, lrreducer, pretrain_stopper, clr][0:1])
+			  callbacks=[pretrain_logger, pretrain_stopper, clr][0:1])
 
 	with open('/data2/public/chonghui_backup/model_summary.txt', 'w') as f:
 		model.summary(print_fn=lambda x: f.write(x + '\n'))
 	model.summary()
 	model.compile(optimizer=pretrain_opt,
-				  loss='mse',#CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
+				  loss='mse',
 				  loss_weights=[1,1,1,1,1], 
 				  metrics=[r2])
 	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), 

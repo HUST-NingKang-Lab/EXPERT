@@ -1,6 +1,6 @@
 import os
 from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, \
-	Conv2D, Activation, Lambda, Layer
+	Conv2D, Activation, Lambda, Layer, Input
 import tensorflow as tf
 from collections import OrderedDict
 import numpy as np
@@ -8,7 +8,7 @@ from tensorflow.keras.callbacks import *
 from tensorflow.keras import backend as K
 
 
-he_uniform = tf.keras.initializers.HeUniform(seed=0)
+he_init = tf.keras.initializers.HeUniform(seed=0)
 
 # transfer: load saved model, build new model from scratch, new model.base = saved model.base
 
@@ -69,57 +69,51 @@ class Model(tf.keras.Model):
 	def init_base_block1(self):
 		block = tf.keras.Sequential(name='base')
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(4096,  kernel_initializer=he_uniform))
+		block.add(Dense(4096, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(2048,  kernel_initializer=he_uniform))
+		block.add(Dense(2048, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(2048,  kernel_initializer=he_uniform))
+		block.add(Dense(2048, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(1024,  kernel_initializer=he_uniform))
+		block.add(Dense(1024, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
-		block.add(Dense(1024,  kernel_initializer=he_uniform))
+		block.add(Dense(1024, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
-
 
 	def init_base_block(self):
-		block = tf.keras.Sequential(name='base')
-		block.add(Conv2D(128, kernel_size=(1, 3),  kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 4, 64) -> 256000
-		block.add(Conv2D(128, kernel_size=(1, 2),  kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 3, 64) -> 192000
-		block.add(Conv2D(128, kernel_size=(1, 2),  kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 2, 128) -> 256000
-		block.add(Conv2D(256, kernel_size=(1, 2),  kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 1, 128) -> 128000
-		block.add(Conv2D(2, kernel_size=(1, 1),  kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (1000, 1, 1) -> 1000
-		block.add(Flatten()) # (1000, )
-		block.add(Dense(2048,  kernel_initializer=he_uniform))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (512, )
-		return block
+		x = Input()                                        # batch_size * num_features * 6
+		x1 = Conv2D(128, kernel_size=(1, 3), kernel_initializer=he_init)(x) # 4
+		x2 = Conv2D(128, kernel_size=(1, 4), kernel_initializer=he_init)(x) # 3
+		x3 = Conv2D(128, kernel_size=(1, 5), kernel_initializer=he_init)(x) # 2
+		x4 = Conv2D(128, kernel_size=(1, 6), kernel_initializer=he_init)(x) # 1
+		xc = (self.concat([x1, x2, x3, x4], axis=2))
+		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 10 * 128
+		xc = Conv2D(32, kernel_size=(1, 10), kernel_initializer=he_init)(xc)
+		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 32
+		xc = Conv2D(4, kernel_size=(1, 1), kernel_initializer=he_init)(xc)
+		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 4
+		xc = Flatten(xc)
+		xc = Dense(1024, kernel_initializer=he_init)(xc)
+		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * 1024
+		model = tf.keras.Model(x, xc)
+		return model
 
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0',  kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_inter_fc0', kernel_initializer=he_init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1',  kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc1', kernel_initializer=he_init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc2',  kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_inter_fc2', kernel_initializer=he_init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
 		return block
@@ -127,7 +121,7 @@ class Model(tf.keras.Model):
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc0', kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*8), name='l' + str(k) + '_integ_fc0', kernel_initializer=he_init))
 		#block.add(self._init_bn_layer())
 		block.add(Activation('relu'))
 		return block
@@ -137,14 +131,14 @@ class Model(tf.keras.Model):
 		block = tf.keras.Sequential(name=name)
 		k = index
 		#block.add(Dropout(0.7))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc0', kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc0', kernel_initializer=he_init))
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc1', kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc1', kernel_initializer=he_init))
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc2', kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc2', kernel_initializer=he_init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_uniform))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.7))
 		block.add(Dense(n_units, name='l' + str(index)))
@@ -162,10 +156,11 @@ class Model(tf.keras.Model):
 
 	def init_post_proc_layer(self, name):
 		def scale_output(x):
+			x = K.relu(x)
 			total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
-			unknown_contrib = tf.subtract(total_contrib, tf.keras.backend.sum(x, keepdims=True, axis=1))
-			contrib = tf.keras.backend.relu(tf.keras.backend.concatenate((x, unknown_contrib), axis=1))
-			scaled_contrib = tf.divide(contrib, tf.keras.backend.sum(contrib, keepdims=True, axis=1))
+			unknown_contrib = K.relu(tf.subtract(total_contrib, K.sum(x, keepdims=True, axis=1)))
+			contrib = K.concatenate((x, unknown_contrib), axis=1)
+			scaled_contrib = tf.divide(contrib, K.sum(contrib, keepdims=True, axis=1))
 			return scaled_contrib
 		return Lambda(scale_output, name=name)
 
@@ -184,13 +179,10 @@ class Model(tf.keras.Model):
 																		 inter_logits[layer]]),
 													  training=training))
 		
-		out_logits = [self.spec_outputs[i](integ_logits[i],
-										   training=training)
+		out_logits = [self.spec_outputs[i](integ_logits[i],  training=training)
 					  for i in range(self.n_layers)]
 
-		outputs = [self.spec_postprocs[i](out_logits[i], training=training)
-				   for i in range(self.n_layers)]
-		#outputs = out_logits
+		outputs = [self.spec_postprocs[i](out_logits[i], training=training)  for i in range(self.n_layers)]
 		
 		if self.n_layers == 5:
 			l1, l2, l3, l4, l5 = tuple(outputs)
@@ -212,8 +204,9 @@ class Model(tf.keras.Model):
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
-		supported_range = 2**np.arange(1, 11)
-		return supported_range[(supported_range < num).sum()]
+		return num
+		'''supported_range = 2**np.arange(1, 11)
+		return supported_range[(supported_range < num).sum()]'''
 
 	def save_base_model(self, path):
 		self.base.save(path, save_format='tf')
