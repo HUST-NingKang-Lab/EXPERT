@@ -233,7 +233,7 @@ class Model(tf.keras.Model):
 			self.spec_outputs[layer].save(self.__pthjoin(outputs_dir, str(layer)), save_format='tf')
 
 	def __restore_from(self, path):
-		mapper_dir = self.__pthjoin(path, 'feature_mapper')
+		#mapper_dir = self.__pthjoin(path, 'feature_mapper')
 		base_dir = self.__pthjoin(path, 'base')
 		inters_dir = self.__pthjoin(path, 'inters')
 		integs_dir = self.__pthjoin(path, 'integs')
@@ -241,7 +241,7 @@ class Model(tf.keras.Model):
 		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
 		integ_dirs = [self.__pthjoin(integs_dir, i) for i in os.listdir(integs_dir)]
 		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
-		self.feature_mapper = tf.keras.models.load_model(mapper_dir, custom_objects={'Mapper': Mapper})
+		#self.feature_mapper = tf.keras.models.load_model(mapper_dir, custom_objects={'Mapper': Mapper})
 		self.base = tf.keras.models.load_model(base_dir)
 		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
 		self.spec_integs = [tf.keras.models.load_model(dir) for dir in integ_dirs]
@@ -275,7 +275,7 @@ class Encoder(Layer):
 	def __init__(self, phylogeny, name=None, **kwargs):
 		super(Encoder, self).__init__(name=name)
 		super(Encoder, self).__init__(kwargs)
-		self.ranks = phylogeny.columns.to_list()
+		self.ranks = phylogeny.columns.to_list()[:-1]
 		self.W = {rank: self.get_W(phylogeny[rank]) for rank in self.ranks}
 		self.dot = K.dot
 		self.concatenate = K.concatenate
