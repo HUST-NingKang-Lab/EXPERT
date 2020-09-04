@@ -45,8 +45,8 @@ class Transformer(object):
 
 		# Change index for boolean indeces
 		sk_indb.index = count_matrix.index
-		cm_keep = count_matrix[sk_indb]
-		cm_keep = (cm_keep / cm_keep.sum()).astype(np.float32)
+		cm_keep = count_matrix[sk_indb].astype(np.float32)
+		#cm_keep = (cm_keep / cm_keep.sum()).astype(np.float32)
 		
 		del count_matrix, taxas, sks, sk_indb
 		gc.collect()

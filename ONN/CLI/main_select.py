@@ -13,7 +13,7 @@ def select(args):
 	if args.filter_only:
 		matrix_genus.loc[phylo['genus'], :].to_hdf(args.o, key='genus')
 	elif args.use_rf:
-		X = matrix_genus.T
+		X = (matrix_genus / matrix_genus.sum()).T  # abundance
 		Y = pd.concat([pd.read_hdf(args.labels, key='l' + str(layer)) for layer in range(args.dmax)], axis=1)
 
 		selector = RandomForestRegressor(n_estimators=500, max_depth=10, n_jobs=args.p,
@@ -28,7 +28,7 @@ def select(args):
 		matrix_genus.loc[new_phylo['genus'], :].to_hdf(args.o, key='genus')
 		new_phylo.to_csv(os.path.join(args.tmp, 'phylogeny_selected_using_rf_importance_C{}.csv'.format(C)))
 	else:
-		X = matrix_genus.T
+		X = (matrix_genus / matrix_genus.sum()).T
 		variance = X.var(axis=0)
 		selector = VarianceThreshold(threshold=C * variance.mean())
 		selector.fit(X)
