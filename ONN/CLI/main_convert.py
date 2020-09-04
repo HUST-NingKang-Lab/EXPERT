@@ -22,23 +22,10 @@ def convert(args):
 
 	included_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
 	matrix = matrix.astype(np.uint64)
-	#print(matrix.dtypes)
-	if args.gen_phylo:
-		print('Optional argument `phylo` is unspecified, '
-			  'the program will generate countmatrix at genus level. '
-			  'Phylogeny will be automatically constructed '
-			  'using all taxonomic entries data involved. '
-			  'You can select features use that.')
-		tm = Transformer(conf_path=args.tmp, phylogeny=args.phylo, db_file=args.db)
-		matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
-		print('Saving results...')
-		matrix_genus.to_hdf(args.o, key='genus', mode='a')
-		print('Phylogeny is saved under `conf` you have specified.')
-		tm.phylogeny.reset_index(drop=True).to_csv(tm.get_conf_savepath('phylogeny_by_transformer.csv'))
-	else:
-		phylo = pd.read_csv(args.phylo, index_col=0)
-		tm = Transformer(conf_path=args.tmp, phylogeny=phylo, db_file=args.db)
-		matrix_by_rank = tm._extract_layers(matrix, included_ranks=included_ranks)
-		print('Saving results...')
-		for rank, matrix in matrix_by_rank.items():
-			matrix.to_hdf(args.o, key=rank, mode='a')
+	tm = Transformer(conf_path=args.tmp, phylogeny=args.phylo, db_file=args.db)
+	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
+	print('Saving results...')
+	matrix_genus.to_hdf(args.o, key='genus', mode='a')
+	print('Phylogeny is saved under `conf` you have specified.')
+	tm.phylogeny.reset_index(drop=True).to_csv(tm.get_conf_savepath('phylogeny_by_transformer.csv'))
+

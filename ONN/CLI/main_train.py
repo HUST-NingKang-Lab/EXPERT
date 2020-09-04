@@ -4,7 +4,6 @@ from ONN.src.utils import read_matrices, read_labels, parse_otlg
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.metrics import AUC
-from tensorflow_addons.optimizers import ExponentialCyclicalLearningRate
 from sklearn.utils.class_weight import compute_sample_weight
 import numpy as np
 from tensorflow.distribute import MirroredStrategy
@@ -12,16 +11,6 @@ import tensorflow as tf
 import os
 from configparser import ConfigParser
 import tensorflow.keras.backend as K
-
-
-def r2(y_true, y_pred):
-    a = K.square(y_pred - y_true)
-    b = K.sum(a)
-    c = K.mean(y_true)
-    d = K.square(y_true - c)
-    e = K.sum(d)
-    f = 1 - b/e
-    return f
 
 
 def train(args):
@@ -56,12 +45,21 @@ def train(args):
 	lrreducer = ReduceLROnPlateau(monitor='val_loss', patience=reduce_patience, verbose=5, factor=0.1)
 	stopper = EarlyStopping(monitor='val_loss', patience=stop_patience, verbose=5, restore_best_weights=True)
 	clr = CyclicLR(base_lr=pretrain_lr, max_lr=0.01, step_size=100., mode='exp_range', gamma=0.99994)	
-	
+
 	pretrain_opt = Adam(lr=pretrain_lr, clipvalue=50)
 	if use_sgd:
 		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
 	else:
 		optimizer = Adam(lr=lr, clipvalue=50)
+
+	def r2(y_true, y_pred):
+		a = K.square(y_pred - y_true)
+		b = K.sum(a)
+		c = K.mean(y_true)
+		d = K.square(y_true - c)
+		e = K.sum(d)
+		f = 1 - b / e
+		return f
 
 	_, layer_units = parse_otlg(args.otlg)			   # sources and layer units
 	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1)) for i, y in enumerate(Y_train)]

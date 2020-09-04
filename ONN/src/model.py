@@ -14,7 +14,7 @@ he_uniform = tf.keras.initializers.HeUniform(seed=0)
 
 class Model(tf.keras.Model):
 
-	def __init__(self, layer_units=None, num_features=1000, restore_from=None):
+	def __init__(self, phylogeny, layer_units=None, num_features=1000, restore_from=None):
 		"""
 		:param phylogeny:
 		:param ontology:
@@ -28,11 +28,11 @@ class Model(tf.keras.Model):
 		if layer_units:
 			self.n_layers = len(layer_units)
 			
-			self.feature_mapper = self.init_mapper_block(num_features=num_features)
+			'''self.feature_mapper = self.init_mapper_block(num_features=num_features)
 			# Avoiding Non-trainble params bug in tensorflow 2.3.0
 			self.feature_mapper.trainable = False
-			self.feature_mapper.trainable = True
-			
+			self.feature_mapper.trainable = True'''
+			self.encoder = self.init_encoder(phylogeny)
 			self.base = self.init_base_block()
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
 													  n_units=n_units)
@@ -55,11 +55,15 @@ class Model(tf.keras.Model):
 		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer))
 							   for layer in range(self.n_layers)]
 
-
 	def init_mapper_block(self, num_features): # map input feature to ...
 		block = tf.keras.Sequential(name='feature_mapper')
 		block.add(Mapper(num_features=num_features, name='feature_mapper_layer'))
 		block.add(self._init_bn_layer())
+		return block
+
+	def init_encoder_block(self, phylogeny):
+		block = tf.keras.Sequential(name='feature_encoder')
+		block.add(Encoder(phylogeny))
 		return block
 
 	def init_base_block1(self):
@@ -166,8 +170,7 @@ class Model(tf.keras.Model):
 		return Lambda(scale_output, name=name)
 
 	def call(self, inputs, training=False):
-		inputs = self.feature_mapper(inputs)
-		inputs = self.expand_dims(inputs, axis=3)
+		inputs = self.encoder(inputs)
 		base = self.base(inputs, training=training if self.fine_tune == False else False)
 		inter_logits = [self.spec_inters[i](base, training=training) for i in range(self.n_layers)]
 		
@@ -205,10 +208,7 @@ class Model(tf.keras.Model):
 			l1 = outputs[0]
 			return l1
 		else:
-			return self.concat(outputs)	
-		
-		
-		return self.concat(outputs)
+			return self.concat(outputs)
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
@@ -225,7 +225,7 @@ class Model(tf.keras.Model):
 		for dir in [path, inters_dir, outputs_dir]:
 			if not os.path.isdir(dir):
 				os.mkdir(dir)
-		self.feature_mapper.save(self.__pthjoin(path, 'feature_mapper'))
+		#self.feature_mapper.save(self.__pthjoin(path, 'feature_mapper'))
 		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
 		for layer in range(self.n_layers):
 			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
@@ -269,6 +269,34 @@ class Mapper(Layer): # A PCA learner
 		config.update({"num_features": self.num_features})
 		return config
 
+
+class Encoder(Layer):
+
+	def __init__(self, phylogeny, name=None, **kwargs):
+		super(Encoder, self).__init__(name=name)
+		super(Encoder, self).__init__(kwargs)
+		self.ranks = phylogeny.columns.to_list()
+		self.W = {rank: self.get_W(phylogeny[rank]) for rank in self.ranks}
+		self.dot = K.dot
+		self.concatenate = K.concatenate
+		self.expand_dims = K.expand_dims
+
+	def get_W(self, taxons):
+		cols = taxons.to_numpy().reshape(taxons.shape[0], 1)
+		rows = taxons.to_numpy().reshape(1, taxons.shape[0])
+		return tf.constant((rows == cols).astype(np.uint))
+
+	def call(self, inputs):
+		F_genus = inputs
+		F_ranks = [self.expand_dims(self.dot(F_genus, self.W[rank]), axis=2) for rank in self.ranks] + \
+				  [self.expand_dims(F_genus, axis=2)]
+		outputs = self.concatenate(F_ranks, axis=2)
+		return outputs
+
+	def get_config(self):
+		config = super(Encoder, self).get_config()
+		config.update({"W": self.W, "ranks": self.ranks})
+		return config
 
 class CyclicLR(Callback):
     """This callback implements a cyclical learning rate policy (CLR).
