@@ -1,9 +1,9 @@
 from ONN.src.model import Model, CyclicLR
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
-from ONN.src.utils import read_genus_abu, read_matrices, read_labels, parse_otlg
+from ONN.src.utils import read_genus_abu, read_matrices, read_labels, parse_otlg, zero_weight_unk
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop
-from sklearn.utils.class_weight import compute_sample_weight
+from sklearn.utils.class_weight import compute_sample_weight, compute_class_weight
 from tensorflow.distribute import MirroredStrategy
 from configparser import ConfigParser
 import tensorflow as tf, numpy as np, pandas as pd, os
@@ -60,36 +60,37 @@ def train(args):
 		f = 1 - b / e
 		return f
 
-	_, layer_units = parse_otlg(args.otlg)			   # sources and layer units
-	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1)) for i, y in enumerate(Y_train)]
-	
-	units = np.array(layer_units)
-	loss_weights = (units - units.min()) / (units.max()-units.min()) * 99 + 1
-	loss_weights = loss_weights.tolist()
-	print('Loss weights: ', loss_weights)
+	_, layer_units = parse_otlg(args.otlg)	  # sources and layer units
+	# calculate sample weight for each layer, assign 0 weight for sample with 0 labels
+	'''sample_weight = [zero_weight_unk(y=y, sample_weight=compute_sample_weight(class_weight='balanced', 
+																			  y=y.to_numpy().argmax(axis=1)))
+					 for i, y in enumerate(Y_train)]'''
+
+	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0]) / y.shape[0])
+					 for i, y in enumerate(Y_train)]
 
 	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
-	model.compile(optimizer=pretrain_opt,
+	model.nn.compile(optimizer=pretrain_opt,
 				  loss='mse',
-				  loss_weights=[layer_units, loss_weights][0],
+				  loss_weights=layer_units,
 				  metrics=[r2])
-	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), 
+	model.nn.fit(X_train, Y_train, validation_data=(X_test, Y_test),
 			  batch_size=batch_size, epochs=pretrain_ep,
-			  #sample_weight=sample_weight, 
+			  sample_weight=sample_weight,
 			  callbacks=[pretrain_logger, pretrain_stopper, clr][0:1])
 
 	with open('/data2/public/chonghui_backup/model_summary.txt', 'w') as f:
-		model.summary(print_fn=lambda x: f.write(x + '\n'))
-	model.summary()
-	model.compile(optimizer=pretrain_opt,
+		model.nn.summary(print_fn=lambda x: f.write(x + '\n'))
+	model.nn.summary()
+	model.nn.compile(optimizer=pretrain_opt,
 				  loss='mse',
 				  loss_weights=[1,1,1,1,1], 
 				  metrics=[r2])
-	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), 
+	model.nn.fit(X_train, Y_train, validation_data=(X_test, Y_test),
 			  batch_size=batch_size, initial_epoch=pretrain_ep, epochs=epochs,
-			  #sample_weight=sample_weight, 
+			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, pretrain_stopper, clr][0:1])
 
-	print(model.evaluate(X_test, Y_test))
+	print(model.nn.evaluate(X_test, Y_test))
 	model.save_blocks(args.o)

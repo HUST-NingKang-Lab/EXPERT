@@ -10,6 +10,11 @@ from pandas.io.json._normalize import nested_to_record
 from ONN.src.model import Model
 
 
+def zero_weight_unk(y, sample_weight):
+	zero_weight_idx = y['Unknown'] == 1
+	sample_weight[zero_weight_idx] = 0
+	return sample_weight
+
 def transfer_weights(base_model: Model, init_model: Model, new_mapper, reuse_levels):
 	init_model.base = base_model.base
 	init_model.base.trainable = False

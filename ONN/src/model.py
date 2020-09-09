@@ -13,31 +13,14 @@ he_init = tf.keras.initializers.HeUniform(seed=0)
 
 # transfer: load saved model, build new model from scratch, new model.base = saved model.base
 
-class Model(tf.keras.Model):
+class Model(object):
 
 	def __init__(self, phylogeny, num_features, cal_contribution=True, layer_units=None, restore_from=None):
-		"""
-		:param phylogeny:
-		:param ontology:
-		:param extractor:
-		"""
-		# init Keras Model
-		super(Model, self).__init__()
-		
 		self.expand_dims = tf.expand_dims
 		self.concat = Concatenate(axis=1)
 		self.concat_a2 = Concatenate(axis=2)
-	
-		# fine tune flag
-		self.fine_tune = False
-		print('Set .fine_tune to True to protect BatchNormalization layers in base block when doing Fine-tuning')
 		if layer_units:
 			self.n_layers = len(layer_units)
-			
-			'''self.feature_mapper = self.init_mapper_block(num_features=num_features)
-			# Avoiding Non-trainble params bug in tensorflow 2.3.0
-			self.feature_mapper.trainable = False
-			self.feature_mapper.trainable = True'''
 			self.encoder = self.init_encoder_block(phylogeny)
 			self.base = self.init_base_block(num_features=num_features)
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
@@ -46,18 +29,18 @@ class Model(tf.keras.Model):
 			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
-			
 			self.spec_outputs = [self.init_output_block(index=layer, name='l{}_output'.format(layer),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
 		elif restore_from:
-			self.__restore_from(restore_from)  # finish here
+			self.__restore_from(restore_from)
 			self.n_layers = len(self.spec_outputs)
 		else:
 			raise ValueError('Please given correct model path to restore, '
 							 'or specify layer_units to build model from scratch.')
-		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer), cal_contribution=cal_contribution)
+		self.spec_postprocs = [self.init_post_proc_layer(name='l{}'.format(layer), cal_contribution=cal_contribution)
 							   for layer in range(self.n_layers)]
+		self.nn = self.build_graph(input_shape=(num_features,))
 
 	def init_mapper_block(self, num_features): # map input feature to ...
 		block = tf.keras.Sequential(name='feature_mapper')
@@ -136,10 +119,12 @@ class Model(tf.keras.Model):
 		block.add(Activation('relu'))
 		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc1', kernel_initializer=he_init))
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc2', kernel_initializer=he_init))
+		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc2', kernel_initializer=he_init,
+						use_bias=False))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
-		#block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_init))
+		#block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_init,
+		# 				 use_bias=False))
 		#block.add(Activation('relu'))
 		#block.add(Dropout(0.7))
 		block.add(Dense(n_units, name='l' + str(index), kernel_constraint=NonNeg(), use_bias=False))
@@ -166,44 +151,24 @@ class Model(tf.keras.Model):
 		
 		return Lambda(calculateSourceContribution if cal_contribution else K.tanh, name=name)
 
-	def call(self, inputs, training=False):
+	def build_graph(self, input_shape):
+		inputs = Input(shape=input_shape)
 		inputs = self.encoder(inputs)
-		inputs_4d = self.expand_dims(inputs, axis=3)
-		base = self.base(inputs_4d, training=training if self.fine_tune == False else False)
-		inter_logits = [self.spec_inters[i](base, training=training) for i in range(self.n_layers)]
+		inputs_3d = self.expand_dims(inputs, axis=2)
+		base = self.base(inputs_3d)
+		inter_logits = [self.spec_inters[i](base) for i in range(self.n_layers)]
 		
 		integ_logits = []
-		
 		for layer in range(self.n_layers):
 			if layer == 0:
-				integ_logits.append(self.spec_integs[layer](inter_logits[layer], training=training))
+				integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 			else:
-				integ_logits.append(self.spec_integs[layer](self.concat([integ_logits[layer-1],
-																		 inter_logits[layer]]),
-													  training=training))
+				integ_logits.append(self.spec_integs[layer](self.concat([integ_logits[layer-1], inter_logits[layer]])))
 		
-		out_logits = [self.spec_outputs[i](integ_logits[i],  training=training)
-					  for i in range(self.n_layers)]
-
-		outputs = [self.spec_postprocs[i](out_logits[i], training=training)  for i in range(self.n_layers)]
-		
-		if self.n_layers == 5:
-			l1, l2, l3, l4, l5 = tuple(outputs)
-			return l1, l2, l3, l4, l5
-		elif self.n_layers == 4:
-			l1, l2, l3, l4 = tuple(outputs)
-			return l1, l2, l3, l4
-		elif self.n_layers == 3:
-			l1, l2, l3 = tuple(outputs)
-			return l1, l2, l3
-		elif self.n_layers == 2:
-			l1, l2 = tuple(outputs)
-			return l1, l2
-		elif self.n_layers == 1:
-			l1 = outputs[0]
-			return l1
-		else:
-			return self.concat(outputs)
+		out_logits = [self.spec_outputs[i](integ_logits[i]) for i in range(self.n_layers)]
+		outputs = [self.spec_postprocs[i](out_logits[i]) for i in range(self.n_layers)]
+		nn = tf.keras.Model(inputs=inputs, outputs=outputs)
+		return nn
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
