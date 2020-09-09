@@ -68,7 +68,7 @@ def train(args):
 	loss_weights = loss_weights.tolist()
 	print('Loss weights: ', loss_weights)
 
-	model = Model(phylogeny=phylogeny, layer_units=layer_units, num_features=X_train.shape[1])
+	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 	model.compile(optimizer=pretrain_opt,
 				  loss='mse',

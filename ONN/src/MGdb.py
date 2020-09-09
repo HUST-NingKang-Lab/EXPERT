@@ -77,7 +77,12 @@ class MGnify(object):
 				try:
 					with urllib.request.urlopen(url) as url:
 						res = json.loads(url.read().decode())['data']
-				except(urllib.error.URLError, OSError):
+				except urllib.error.URLError as ex:
+					print(ex, url)
+					print('A problem has occured, still retrying....')
+					pass
+				except OSError as ex:
+					print(ex, url)
 					print('A problem has occured, still retrying....')
 					pass
 		return res, 'Pass'

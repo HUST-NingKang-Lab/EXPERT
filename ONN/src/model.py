@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 from tensorflow.keras.callbacks import *
 from tensorflow.keras import backend as K
+from tensorflow.keras.constraints import NonNeg
 
 
 he_init = tf.keras.initializers.HeUniform(seed=0)
@@ -14,7 +15,7 @@ he_init = tf.keras.initializers.HeUniform(seed=0)
 
 class Model(tf.keras.Model):
 
-	def __init__(self, phylogeny, layer_units=None, num_features=1000, restore_from=None):
+	def __init__(self, phylogeny, num_features, cal_contribution=True, layer_units=None, restore_from=None):
 		"""
 		:param phylogeny:
 		:param ontology:
@@ -38,7 +39,7 @@ class Model(tf.keras.Model):
 			self.feature_mapper.trainable = False
 			self.feature_mapper.trainable = True'''
 			self.encoder = self.init_encoder_block(phylogeny)
-			self.base = self.init_base_block()
+			self.base = self.init_base_block(num_features=num_features)
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
 													  n_units=n_units)
 							   for layer, n_units in enumerate(layer_units)]
@@ -55,7 +56,7 @@ class Model(tf.keras.Model):
 		else:
 			raise ValueError('Please given correct model path to restore, '
 							 'or specify layer_units to build model from scratch.')
-		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer))
+		self.spec_postprocs = [self.init_post_proc_layer(name='l{}_postproc'.format(layer), cal_contribution=cal_contribution)
 							   for layer in range(self.n_layers)]
 
 	def init_mapper_block(self, num_features): # map input feature to ...
@@ -69,15 +70,9 @@ class Model(tf.keras.Model):
 		block.add(Encoder(phylogeny))
 		return block
 
-	def init_base_block1(self):
+	def init_base_block(self, num_features):
 		block = tf.keras.Sequential(name='base')
 		block.add(Flatten()) # (1000, )
-		block.add(Dense(4096, kernel_initializer=he_init))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (512, )
-		block.add(Dense(2048, kernel_initializer=he_init))
-		block.add(self._init_bn_layer())
-		block.add(Activation('relu')) # (512, )
 		block.add(Dense(2048, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
@@ -85,21 +80,24 @@ class Model(tf.keras.Model):
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		block.add(Dense(1024, kernel_initializer=he_init))
+		block.add(self._init_bn_layer())
+		block.add(Activation('relu')) # (512, )
+		block.add(Dense(512, kernel_initializer=he_init))
 		block.add(self._init_bn_layer())
 		block.add(Activation('relu')) # (512, )
 		return block
 
-	def init_base_block(self):
-		x = Input(shape=(1665, 6, 1))                                        # batch_size * num_features * 6
+	def init_base_block1(self, num_features):
+		x = Input(shape=(num_features, 6, 1))                               # batch_size * num_features * 6
 		x1 = Conv2D(128, kernel_size=(1, 3), kernel_initializer=he_init)(x) # 4
-		x2 = Conv2D(128, kernel_size=(1, 4), kernel_initializer=he_init)(x) # 3
-		x3 = Conv2D(128, kernel_size=(1, 5), kernel_initializer=he_init)(x) # 2
-		x4 = Conv2D(128, kernel_size=(1, 6), kernel_initializer=he_init)(x) # 1
-		xc = self.concat_a2([x1, x2, x3, x4])
-		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 10 * 128
-		xc = Conv2D(32, kernel_size=(1, 10), kernel_initializer=he_init)(xc)
+		#x2 = Conv2D(64, kernel_size=(1, 4), kernel_initializer=he_init)(x) # 3
+		#x3 = Conv2D(64, kernel_size=(1, 5), kernel_initializer=he_init)(x) # 2
+		#x4 = Conv2D(64, kernel_size=(1, 6), kernel_initializer=he_init)(x) # 1
+		#xc = self.concat_a2([x1, x2, x3, x4])
+		xc = Activation('relu')(self._init_bn_layer()(x1)) # batch_size * num_features * 10 * 128
+		xc = Conv2D(64, kernel_size=(1, 4), kernel_initializer=he_init)(xc)
 		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 32
-		xc = Conv2D(4, kernel_size=(1, 1), kernel_initializer=he_init)(xc)
+		xc = Conv2D(2, kernel_size=(1, 1), kernel_initializer=he_init)(xc)
 		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 4
 		xc = Flatten()(xc)
 		xc = Dense(1024, kernel_initializer=he_init)(xc)
@@ -141,10 +139,10 @@ class Model(tf.keras.Model):
 		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc2', kernel_initializer=he_init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.5))
-		block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_init))
-		block.add(Activation('relu'))
+		#block.add(Dense(self._get_n_units(n_units*4), name='l' + str(k) + '_output_fc3', kernel_initializer=he_init))
+		#block.add(Activation('relu'))
 		#block.add(Dropout(0.7))
-		block.add(Dense(n_units, name='l' + str(index)))
+		block.add(Dense(n_units, name='l' + str(index), kernel_constraint=NonNeg(), use_bias=False))
 		return block
 
 	def _get_dropout_rate(self, index, last_n_units, next_n_units):
@@ -157,15 +155,16 @@ class Model(tf.keras.Model):
 	def _init_bn_layer(self):
 		return BatchNormalization(momentum=0.9)
 
-	def init_post_proc_layer(self, name):
-		def scale_output(x):
+	def init_post_proc_layer(self, name, cal_contribution):
+		def calculateSourceContribution(x):
 			x = K.relu(x)
 			total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
 			unknown_contrib = K.relu(tf.subtract(total_contrib, K.sum(x, keepdims=True, axis=1)))
 			contrib = K.concatenate((x, unknown_contrib), axis=1)
 			scaled_contrib = tf.divide(contrib, K.sum(contrib, keepdims=True, axis=1))
 			return scaled_contrib
-		return Lambda(scale_output, name=name)
+		
+		return Lambda(calculateSourceContribution if cal_contribution else K.tanh, name=name)
 
 	def call(self, inputs, training=False):
 		inputs = self.encoder(inputs)
@@ -208,9 +207,9 @@ class Model(tf.keras.Model):
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
-		return num
-		'''supported_range = 2**np.arange(1, 11)
-		return supported_range[(supported_range < num).sum()]'''
+		#return num
+		supported_range = 2**np.arange(1, 11)
+		return supported_range[(supported_range < num).sum()]
 
 	def save_base_model(self, path):
 		self.base.save(path, save_format='tf')
