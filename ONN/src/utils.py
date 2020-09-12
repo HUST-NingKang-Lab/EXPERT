@@ -11,8 +11,9 @@ from ONN.src.model import Model
 
 
 def zero_weight_unk(y, sample_weight):
-	zero_weight_idx = y['Unknown'] == 1
+	zero_weight_idx = (y['Unknown'] == 1).to_numpy()
 	sample_weight[zero_weight_idx] = 0
+	sample_weight = sample_weight / (1 - zero_weight_idx.sum() / zero_weight_idx.shape[0])
 	return sample_weight
 
 def transfer_weights(base_model: Model, init_model: Model, new_mapper, reuse_levels):

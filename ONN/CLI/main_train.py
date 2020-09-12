@@ -45,7 +45,7 @@ def train(args):
 	clr = CyclicLR(base_lr=pretrain_lr, max_lr=0.01, step_size=100., mode='exp_range', gamma=0.99994)	
 
 	phylogeny = pd.read_csv(args.phylo, index_col=0)
-	pretrain_opt = Adam(lr=pretrain_lr, clipvalue=50)
+	pretrain_opt = Adam(lr=pretrain_lr, clipvalue=5)
 	if use_sgd:
 		optimizer = SGD(lr=lr, momentum=0.9, nesterov=True)
 	else:
@@ -66,31 +66,35 @@ def train(args):
 																			  y=y.to_numpy().argmax(axis=1)))
 					 for i, y in enumerate(Y_train)]'''
 
-	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0]) / y.shape[0])
+	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0]))
 					 for i, y in enumerate(Y_train)]
-
+	X_train = X_train[sample_weight[-1] != 0]
+	Y_train = [y.iloc[sample_weight[-1] != 0, :-1] for y in Y_train]
+	sample_weight = [weight[sample_weight[-1] != 0] for weight in sample_weight]
+	print(X_train.shape)
 	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 	model.nn.compile(optimizer=pretrain_opt,
-				  loss='mse',
-				  loss_weights=layer_units,
-				  metrics=[r2])
-	model.nn.fit(X_train, Y_train, validation_data=(X_test, Y_test),
+				  loss=CategoricalCrossentropy(), #'mse',
+				  #loss_weights=layer_units, #[1,1,1,1,1],
+				  weighted_metrics=['acc'])
+	model.nn.fit(X_train, Y_train, validation_split=0.2, #validation_data=(X_test, Y_test),
 			  batch_size=batch_size, epochs=pretrain_ep,
 			  sample_weight=sample_weight,
-			  callbacks=[pretrain_logger, pretrain_stopper, clr][0:1])
+			  callbacks=[pretrain_logger, lrreducer, pretrain_stopper, clr][0:1])
 
 	with open('/data2/public/chonghui_backup/model_summary.txt', 'w') as f:
 		model.nn.summary(print_fn=lambda x: f.write(x + '\n'))
 	model.nn.summary()
+	'''
 	model.nn.compile(optimizer=pretrain_opt,
 				  loss='mse',
 				  loss_weights=[1,1,1,1,1], 
-				  metrics=[r2])
-	model.nn.fit(X_train, Y_train, validation_data=(X_test, Y_test),
+				  weighted_metrics=[r2])
+	model.nn.fit(X_train, Y_train, validation_split=0.2, #validation_data=(X_test, Y_test),
 			  batch_size=batch_size, initial_epoch=pretrain_ep, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, pretrain_stopper, clr][0:1])
-
+	'''
 	print(model.nn.evaluate(X_test, Y_test))
 	model.save_blocks(args.o)
