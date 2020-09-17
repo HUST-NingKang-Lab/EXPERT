@@ -1,6 +1,6 @@
 import os
 from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, \
-	Conv2D, Activation, Lambda, Layer, Input
+	Conv2D, Activation, Lambda, Layer, Input, GaussianNoise, AlphaDropout
 import tensorflow as tf
 from collections import OrderedDict
 import numpy as np
@@ -9,9 +9,11 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.constraints import NonNeg
 
 
-init = tf.keras.initializers.HeUniform(seed=0)
-
+init = tf.keras.initializers.HeUniform(seed=2)
+#init = tf.keras.initializers.LecunNormal(seed=1)
+sig_init = tf.keras.initializers.GlorotUniform(seed=2)
 # transfer: load saved model, build new model from scratch, new model.base = saved model.base
+
 
 class Model(object):
 
@@ -23,14 +25,14 @@ class Model(object):
 			self.n_layers = len(layer_units)
 			self.encoder = self.init_encoder_block(phylogeny)
 			self.base = self.init_base_block(num_features=num_features)
-			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer),
+			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer+2),
 													  n_units=n_units)
 							   for layer, n_units in enumerate(layer_units)]
-			self.dropouts = [Dropout(0) for layer in range(self.n_layers)]
-			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer),
+			#self.dropouts = [Dropout(0) for layer in range(self.n_layers)]
+			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer+2),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
-			self.spec_outputs = [self.init_output_block(index=layer, name='l{}_output'.format(layer),
+			self.spec_outputs = [self.init_output_block(index=layer, name='l{}o'.format(layer+2),
 														n_units=n_units)
 								 for layer, n_units in enumerate(layer_units)]
 		elif restore_from:
@@ -46,7 +48,7 @@ class Model(object):
 	def init_mapper_block(self, num_features): # map input feature to ...
 		block = tf.keras.Sequential(name='feature_mapper')
 		block.add(Mapper(num_features=num_features, name='feature_mapper_layer'))
-		block.add(self._init_bn_layer())
+		#block.add(self._init_bn_layer())
 		return block
 
 	def init_encoder_block(self, phylogeny):
@@ -57,60 +59,42 @@ class Model(object):
 	def init_base_block(self, num_features):
 		block = tf.keras.Sequential(name='base')
 		block.add(Flatten()) # (1000, )
-		#block.add(Dropout(0.7))
-		block.add(Dense(2**10, kernel_initializer=init))
-		block.add(Activation('relu')) # (512, )
-		#block.add(self._init_bn_layer())
+		#block.add(Dropout(0.3, seed=1))
 		block.add(Dense(2**9, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
-		#block.add(self._init_bn_layer())
+		#block.add(Dropout(0.3, seed=1))
+		block.add(Dense(2**9, kernel_initializer=init))
+		block.add(Activation('relu')) # (512, )
+		block.add(Dropout(0.6, seed=1))
 		return block
-
-	def init_base_block1(self, num_features):
-		x = Input(shape=(num_features, 6, 1))                               # batch_size * num_features * 6
-		x1 = Conv2D(128, kernel_size=(1, 3), kernel_initializer=init)(x) # 4
-		#x2 = Conv2D(64, kernel_size=(1, 4), kernel_initializer=init)(x) # 3
-		#x3 = Conv2D(64, kernel_size=(1, 5), kernel_initializer=init)(x) # 2
-		#x4 = Conv2D(64, kernel_size=(1, 6), kernel_initializer=init)(x) # 1
-		#xc = self.concat_a2([x1, x2, x3, x4])
-		xc = Activation('relu')(self._init_bn_layer()(x1)) # batch_size * num_features * 10 * 128
-		xc = Conv2D(64, kernel_size=(1, 4), kernel_initializer=init)(xc)
-		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 32
-		xc = Conv2D(2, kernel_size=(1, 1), kernel_initializer=init)(xc)
-		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * num_features * 1 * 4
-		xc = Flatten()(xc)
-		xc = Dense(1024, kernel_initializer=init)(xc)
-		xc = Activation('relu')(self._init_bn_layer()(xc)) # batch_size * 1024
-		model = tf.keras.Model(x, xc)
-		return model
 
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(2**8, name='l' + str(k) + '_inter_fc0', kernel_initializer=init))
+		block.add(Dense(self._get_n_units(3*n_units), name='l' + str(k) + '_inter_fc0', kernel_initializer=init))
 		block.add(Activation('relu'))
-		#block.add(self._init_bn_layer())
-		block.add(Dense(2**7, name='l' + str(k) + '_inter_fc1', kernel_initializer=init))
+		block.add(Dense(self._get_n_units(2*n_units), name='l' + str(k) + '_inter_fc1', kernel_initializer=init))
 		block.add(Activation('relu'))
-		#block.add(self._init_bn_layer())
-		block.add(Dense(2**6, name='l' + str(k) + '_inter_fc2', kernel_initializer=init))
+		block.add(Dense(self._get_n_units(1*n_units), name='l' + str(k) + '_inter_fc2', kernel_initializer=init))
 		block.add(Activation('relu'))
-		#block.add(Dropout(0.75))
+		#block.add(Dropout(0.4, seed=1))
 		return block
 
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(2**6, name='l' + str(k) + '_integ_fc0', kernel_initializer=init))
-		#block.add(Activation('relu'))
-		#block.add(Dropout( (2**6 - n_units) / (2 * 2**6) ))
+		block.add(Dense(self._get_n_units(2*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
+		block.add(Activation('tanh'))
+		#block.add(Dropout(0.4, seed=1))
 		return block
 
 	def init_output_block(self, index, name, n_units):
 		#input_shape = (128 * 2 if index > 0 else 128, )
 		k = index
-		return Dense(n_units, name='l' + str(index), #kernel_constraint=NonNeg(), 
-				  activation='sigmoid')
+		block = tf.keras.Sequential(name=name)
+		block.add(Dense(n_units, name='l' + str(index+2) + 'o_fc', kernel_initializer=sig_init))
+		block.add(Activation('sigmoid'))
+		return block
 
 	def _get_dropout_rate(self, index, last_n_units, next_n_units):
 		prop = (last_n_units - next_n_units) / last_n_units
@@ -120,7 +104,7 @@ class Model(object):
 		return prop_scaled
 
 	def _init_bn_layer(self):
-		return BatchNormalization(momentum=0.99)
+		return BatchNormalization(momentum=0.9, scale=False)
 
 	def init_post_proc_layer(self, name, cal_contribution):
 		def calculateSourceContribution(x):
@@ -145,7 +129,7 @@ class Model(object):
 			if layer == 0:
 				integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 			else:
-				logits = self.concat([self.dropouts[layer](integ_logits[layer-1]), inter_logits[layer]])
+				logits = self.concat([0.1 * integ_logits[layer-1], inter_logits[layer]])
 				integ_logits.append(self.spec_integs[layer](logits))
 				#integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 		
@@ -153,15 +137,14 @@ class Model(object):
 		
 		#outputs = [self.spec_postprocs[i](out_probas[i]) for i in range(self.n_layers)]
 		#nn = tf.keras.Model(inputs=inputs, outputs=outputs)
-		
 		nn = tf.keras.Model(inputs=inputs, outputs=out_probas)
 		return nn
 
 	def _get_n_units(self, num):
 		# closest binary exponential number larger than num
-		#return num
-		supported_range = 2**np.arange(1, 20)
-		return supported_range[(supported_range < num).sum()]
+		return int(num)
+		#supported_range = 2**np.arange(1, 20)
+		#return supported_range[(supported_range < num).sum()]
 
 	def save_base_model(self, path):
 		self.base.save(path, save_format='tf')
