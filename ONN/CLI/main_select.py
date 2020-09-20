@@ -11,7 +11,11 @@ def select(args):
 	print(matrix_genus)
 
 	if args.filter_only:
-		matrix_genus.loc[phylo['genus'], :].to_hdf(args.o, key='genus')
+		cols = set(phylo.columns.tolist())
+		mat = phylo.set_index('genus').join(matrix_genus).fillna(0)
+		mat = mat.drop(columns= (cols - {'genus'}) )
+		print(mat.head())
+		mat.to_hdf(args.o, key='genus')
 	elif args.use_rf:
 		X = (matrix_genus / matrix_genus.sum()).T  # abundance
 		Y = pd.concat([pd.read_hdf(args.labels, key='l' + str(layer)) for layer in range(args.dmax)], axis=1)

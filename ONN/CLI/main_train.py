@@ -42,7 +42,7 @@ def train(args):
 									 restore_best_weights=True)
 
 	logger = CSVLogger(filename=args.log)
-	lrreducer = ReduceLROnPlateau(monitor='val_loss', patience=reduce_patience, min_lr=1e-5, verbose=5, factor=0.2)
+	lrreducer = ReduceLROnPlateau(monitor='val_loss', patience=reduce_patience, min_lr=1e-4, verbose=5, factor=0.1)
 	stopper = EarlyStopping(monitor='val_loss', patience=stop_patience, verbose=5, restore_best_weights=True)
 	clr = CyclicLR(base_lr=pretrain_lr, max_lr=0.001, step_size=100., mode='exp_range', gamma=0.99994)	
 	#lrreducer = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=pretrain_lr, decay_steps=100, decay_rate=0.5)
@@ -70,14 +70,14 @@ def train(args):
 					 for i, y in enumerate(Y_train)]
 	'''
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]
-	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std()}
+	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
 	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
 	Y_train = [y.iloc[:, :-1] for y in Y_train]
 	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 	model.nn.compile(optimizer=pretrain_opt,
 				  loss=CategoricalCrossentropy(),
-				  loss_weights=[2,2,2,2,1],
+				  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(),
 				  weighted_metrics=['acc']) 
 	model.nn.fit(X_train, Y_train, validation_split=0.1, #validation_data=(X_test, Y_test),
 			  batch_size=batch_size, epochs=pretrain_ep,
@@ -91,8 +91,8 @@ def train(args):
 	print('Training using Adam with lr={}...'.format(lr))
 	model.nn.compile(optimizer=optimizer,
 				  loss=CategoricalCrossentropy(),
-				  loss_weights=[2,2,2,2,1],
-				  weighted_metrics=['acc', AUC(num_thresholds=100)])
+				  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(),
+				  weighted_metrics=['acc', AUC(num_thresholds=100, name='auc')])
 	model.nn.fit(X_train, Y_train, validation_split=0.1, #validation_data=(X_test, Y_test),
 			  batch_size=batch_size, initial_epoch=pretrain_ep, epochs=epochs + pretrain_ep,
 			  sample_weight=sample_weight,

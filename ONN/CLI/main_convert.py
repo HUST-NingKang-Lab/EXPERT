@@ -14,13 +14,14 @@ def convert(args):
 	with open(args.i, 'r') as f:
 		input_files = f.read().splitlines()
 	if args.in_cm:
-		sub_matrices = map(lambda x: pd.read_csv(x, sep='\t'), tqdm(input_files))
+		sub_matrices = map(lambda x: pd.read_csv(x, sep='\t', index_col=0), tqdm(input_files))
 		matrix = merge_countmatrices(sub_matrices)
 	else:
 		samples = map(lambda x: pd.read_csv(x, sep='\t', header=1), tqdm(input_files))
 		matrix = samples_to_countmatrix(samples)
 
 	included_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
+	print(matrix.describe(percentiles=[]))
 	matrix = matrix.astype(np.uint64)
 	tm = Transformer(conf_path=args.tmp, phylogeny=args.phylo, db_file=args.db)
 	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)

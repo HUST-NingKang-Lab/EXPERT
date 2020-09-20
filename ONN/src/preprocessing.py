@@ -45,9 +45,9 @@ class Transformer(object):
 
 		# Change index for boolean indeces
 		sk_indb.index = count_matrix.index
+		#print(count_matrix.describe(percentiles=[]))	
 		cm_keep = count_matrix[sk_indb].astype(np.float32)
 		#cm_keep = (cm_keep / cm_keep.sum()).astype(np.float32)
-		
 		del count_matrix, taxas, sks, sk_indb
 		gc.collect()
 
@@ -78,7 +78,7 @@ class Transformer(object):
 		# Setting genus as index
 		cm_with_lngs = cm_keep.join(lineages)
 		cm_with_lngs = cm_with_lngs.groupby(by=included_ranks, sort=False, as_index=False).sum()
-		
+
 		del cm_keep
 		gc.collect()
 		
@@ -129,15 +129,14 @@ class Transformer(object):
 		:param multi_entries:
 		:return:
 		"""
-		entries_se = multi_entries.str.split(';').apply(lambda x: {i.split('__')[0]:
-																	   i.split('__')[1] for i in x})
+		entries_se = multi_entries.str.split(';').apply(lambda x: {i.split('__')[0]: i.split('__')[1] for i in x})
 		# get tidy data
 		entries_df = pd.DataFrame(entries_se.tolist(), index=entries_se.index).fillna('')
-		entries_df = entries_df.applymap(lambda x: x.replace('_', ' '))
+		#entries_df = entries_df.applymap(lambda x: x.replace('_', ' '))
 
 		isin_db = entries_df.apply(self.db_tool.entries_in_db, axis=1)
-		isfarthest_indb = pd.DataFrame(isin_db.apply(lambda x: x.index == x[x].index[-1],
-													 axis=1).values.tolist(),
+		isin_db.to_csv('isin_db.csv')
+		isfarthest_indb = pd.DataFrame(isin_db.apply(lambda x: x.index == x[x].index[-1], axis=1).values.tolist(),
 									   index=entries_df.index,
 									   columns=entries_df.columns)
 

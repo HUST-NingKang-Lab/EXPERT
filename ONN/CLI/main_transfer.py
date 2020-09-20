@@ -1,9 +1,11 @@
 from ONN.src.model import Model
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
-from ONN.src.utils import read_matrices, read_labels, parse_otlg, transfer_weights
+from ONN.src.utils import read_genus_abu, read_labels, parse_otlg, transfer_weights, zero_weight_unk
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.keras.metrics import AUC
 from sklearn.utils.class_weight import compute_sample_weight
+import pandas as pd
 import numpy as np
 from tensorflow.distribute import MirroredStrategy
 import tensorflow as tf
@@ -18,15 +20,15 @@ def transfer(args):
 	cfg = ConfigParser()
 	cfg.read(args.cfg)
 	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-	os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+	os.environ["CUDA_VISIBLE_DEVICES"] = cfg.get('train', 'gpu')
 	gpus = tf.config.list_physical_devices('GPU')
 	for gpu in gpus:
 		tf.config.experimental.set_memory_growth(gpu, True)
 
-	X_train, X_test, shuffle_idx = read_matrices(args.i, split_idx=args.split_idx, end_idx=args.end_idx)
+	X_train, X_test, shuffle_idx = read_genus_abu(args.i, split_idx=args.split_idx, end_idx=args.end_idx)
 	Y_train, Y_test = read_labels(args.labels, shuffle_idx=shuffle_idx, split_idx=args.split_idx,
 								  end_idx=args.end_idx, dmax=args.dmax)
-
+	phylogeny = pd.read_csv(args.phylo, index_col=0)
 	do_finetune = cfg.getboolean('transfer', 'do_finetune')
 	new_mapper = cfg.getboolean('transfer', 'new_mapper')
 	reuse_levels = cfg.get('transfer', 'reuse_levels')
@@ -43,53 +45,59 @@ def transfer(args):
 
 	warmup_logger = CSVLogger(filename=args.log)
 	logger = CSVLogger(filename=args.log, append=True)
-	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=min_lr)
+	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=1e-4)
 	stopper = EarlyStopping(patience=stop_patience, verbose=5, restore_best_weights=True)
 
 	_, layer_units = parse_otlg(args.otlg)  # sources and layer units
-	sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1))
-					 for i, y in enumerate(Y_train)]
+	'''sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1))
+					 for i, y in enumerate(Y_train)]'''
+	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]	
 	loss_weights = [units/sum(layer_units) for units in layer_units]
-
+	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
+	X_train = (X_train - Xf_stats['mean']) / (Xf_stats['std'])
+	#print(X_train.isna().sum().nlargest(n=10))
+	Y_train = [y.drop(columns=['Unknown']) for y in Y_train]
+	print('Total correct samples: {}?{}'.format(sum(X_train.index == Y_train[0].index), X_train.shape[0]))
+	
 	optimizer = Adam(lr=lr)
 	f_optimizer = Adam(lr=finetune_lr)
 
-	strategy = MirroredStrategy()
-	with strategy.scope():
-		base_model = Model(restore_from=args.model)
-		init_model = Model(layer_units=layer_units, num_features=X_train.shape[1])
-		# All transferred blocks and layers will be set to be non-trainable automatically.
-		model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
-		print('Training using optimizer with lr={}...'.format(lr))
-		model.compile(optimizer=optimizer,
-					  loss=CategoricalCrossentropy(from_logits=True, label_smoothing=label_smoothing),
-					  loss_weights=loss_weights,
-					  metrics='acc')
-	model.fit(X_train, Y_train, validation_data=(X_test, Y_test), batch_size=batch_size, epochs=epochs,
+	base_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], restore_from=args.model)
+	init_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
+	# All transferred blocks and layers will be set to be non-trainable automatically.
+	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
+	model.nn = model.build_graph(input_shape=(X_train.shape[1], ))
+	print('Training using optimizer with lr={}...'.format(lr))
+	model.nn.compile(optimizer=optimizer,
+				  loss=CategoricalCrossentropy(label_smoothing=label_smoothing),
+				  loss_weights=loss_weights, 
+				  weighted_metrics=['acc', AUC(num_thresholds=100, name='auc', curve='PR')])
+	model.nn.fit(X_train, Y_train, validation_split=0.1, batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
-	model.summary()
+	model.nn.summary()
 
 	if do_finetune:
 		finetune_eps += stopper.stopped_epoch
-		with strategy.scope():
-			print('Fine-tuning using optimizer with lr={}...'.format(finetune_lr))
-			model.fine_tune = True
-			model.feature_mapper.trainable = True
-			model.base.trainable = True
-			for layer in range(model.n_layers):
-				model.spec_inters[layer].trainable = True
-				model.spec_integs[layer].trainable = True
-				model.spec_outputs[layer].trainable = True
-			model.compile(optimizer=f_optimizer,
-						  loss=CategoricalCrossentropy(from_logits=True,
-													   label_smoothing=label_smoothing),
-						  loss_weights=loss_weights,
-						  metrics='acc')
-		model.fit(X_train, Y_train,
-				  validation_data=(X_test, Y_test),
+		print('Fine-tuning using optimizer with lr={}...'.format(finetune_lr))
+		model.base.trainable = True
+		for layer in range(model.n_layers):
+			model.spec_inters[layer].trainable = True
+			model.spec_integs[layer].trainable = True
+			model.spec_outputs[layer].trainable = True
+		model.nn = model.build_graph(input_shape=(X_train.shape[1], ))
+		model.nn.compile(optimizer=f_optimizer,
+					  loss=CategoricalCrossentropy(label_smoothing=label_smoothing),
+					  loss_weights=loss_weights,
+					  weighted_metrics=['acc', AUC(num_thresholds=100, name='auc', curve='PR')])
+		model.nn.fit(X_train, Y_train, validation_split=0.1,
 				  batch_size=batch_size,
 				  epochs=finetune_eps,
 				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight,
-				  callbacks=[logger, lrreducer, stopper])
+				  callbacks=[logger, stopper])
+		
 		model.save_blocks(args.o)
+		sample_weight_test = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_test)]	
+		X_test = (X_test - Xf_stats['mean']) / Xf_stats['std']
+		Y_test = [y.drop(columns=['Unknown']) for y in Y_test]
+		model.nn.evaluate(X_test, Y_test, sample_weight=sample_weight_test)

@@ -60,22 +60,22 @@ class Model(object):
 		block = tf.keras.Sequential(name='base')
 		block.add(Flatten()) # (1000, )
 		#block.add(Dropout(0.3, seed=1))
-		block.add(Dense(2**9, kernel_initializer=init))
+		block.add(Dense(2**10, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
 		#block.add(Dropout(0.3, seed=1))
 		block.add(Dense(2**9, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
-		block.add(Dropout(0.6, seed=1))
+		#block.add(Dropout(0.3, seed=1))
 		return block
 
 	def init_inter_block(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
-		block.add(Dense(self._get_n_units(3*n_units), name='l' + str(k) + '_inter_fc0', kernel_initializer=init))
+		block.add(Dense(self._get_n_units(8*n_units), name='l' + str(k) + '_inter_fc0', kernel_initializer=init))
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(2*n_units), name='l' + str(k) + '_inter_fc1', kernel_initializer=init))
+		block.add(Dense(self._get_n_units(4*n_units), name='l' + str(k) + '_inter_fc1', kernel_initializer=init))
 		block.add(Activation('relu'))
-		block.add(Dense(self._get_n_units(1*n_units), name='l' + str(k) + '_inter_fc2', kernel_initializer=init))
+		block.add(Dense(self._get_n_units(2*n_units), name='l' + str(k) + '_inter_fc2', kernel_initializer=init))
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.4, seed=1))
 		return block
@@ -83,7 +83,7 @@ class Model(object):
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(self._get_n_units(2*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
+		block.add(Dense(self._get_n_units(4*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
 		block.add(Activation('tanh'))
 		#block.add(Dropout(0.4, seed=1))
 		return block
@@ -129,7 +129,7 @@ class Model(object):
 			if layer == 0:
 				integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 			else:
-				logits = self.concat([0.1 * integ_logits[layer-1], inter_logits[layer]])
+				logits = self.concat([integ_logits[layer-1], inter_logits[layer]])
 				integ_logits.append(self.spec_integs[layer](logits))
 				#integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 		
