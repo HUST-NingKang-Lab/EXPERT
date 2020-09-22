@@ -40,8 +40,7 @@ class Model(object):
 			raise ValueError('Please given correct model path to restore, '
 							 'or specify layer_units to build model from scratch.')
 		self.encoder = self.init_encoder_block(phylogeny)
-		self.spec_postprocs = [self.init_post_proc_layer(name='l{}'.format(layer + 2), cal_contribution=cal_contribution)
-							   for layer in range(self.n_layers)]
+		self.spec_postprocs = [self.init_post_proc_layer(name='l{}'.format(layer + 2)) for layer in range(self.n_layers)]
 		self.nn = self.build_graph(input_shape=(num_features,))
 
 	def save_blocks(self, path):
