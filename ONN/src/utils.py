@@ -269,11 +269,6 @@ def extract_RRDM(F, ):
 	'''
 	pass
 
-def load_ontology(path):
-	otlg = SuperTree()
-	otlg = otlg.from_pickle(path)
-	return otlg
-
 def get_extractor(model, begin_layer, end_layer):
 	return None
 

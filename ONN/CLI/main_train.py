@@ -71,7 +71,7 @@ def train(args):
 	_, layer_units = parse_otlg(ontology)
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]
 	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
-	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
+	#X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
 	Y_train = [y.iloc[:, :-1] for y in Y_train]
 	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], ontology=ontology)
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))

@@ -87,7 +87,9 @@ class Model(object):
 
 	def init_base_block(self, num_features):
 		block = tf.keras.Sequential(name='base')
+		block.add()
 		block.add(Flatten()) # (1000, )
+		block.add(self._init_bn_layer())
 		block.add(Dense(2**10, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
 		block.add(Dense(2**9, kernel_initializer=init))
@@ -149,8 +151,7 @@ class Model(object):
 		inputs = Input(shape=self.nn.input_shape)
 		logits = self.nn(inputs)
 		contrib = [self.spec_postprocs[i](logits[i]) for i in range(self.n_layers)]
-		est = tf.keras.Model(inputs=inputs, outputs=contrib)
-		return est
+		self.estimator = tf.keras.Model(inputs=inputs, outputs=contrib)
 
 	def _init_bn_layer(self):
 		return BatchNormalization(momentum=0.9, scale=False)
