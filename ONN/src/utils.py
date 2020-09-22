@@ -94,9 +94,12 @@ def read_labels(path, shuffle_idx, split_idx, end_idx, dmax):
 	return [label[0:split_idx] for label in labels[1:]], \
 		   [label[split_idx:end_idx] for label in labels[1:]] # except for layer 0 -> root 
 
-def parse_otlg(path):
+def load_otlg(path):
 	otlg = SuperTree().from_pickle(path)
-	labels = OrderedDict([(layer, label) for layer, label in otlg.get_ids_by_level().items()
+	return otlg
+
+def parse_otlg(ontology):
+	labels = OrderedDict([(layer, label) for layer, label in ontology.get_ids_by_level().items()
 						  if layer > 0])
 	layer_units = [len(label) for layer, label in labels.items()]
 	return labels, layer_units

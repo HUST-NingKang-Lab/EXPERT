@@ -1,6 +1,6 @@
 from ONN.src.model import Model, CyclicLR
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
-from ONN.src.utils import read_genus_abu, read_matrices, read_labels, parse_otlg, zero_weight_unk
+from ONN.src.utils import read_genus_abu, read_matrices, read_labels, load_otlg, zero_weight_unk, parse_otlg
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop, Nadam
 from tensorflow.keras.metrics import AUC
@@ -63,17 +63,18 @@ def train(args):
 		f = 1 - b / e
 		return f
 
-	_, layer_units = parse_otlg(args.otlg)	  # sources and layer units
 	# calculate sample weight for each layer, assign 0 weight for sample with 0 labels
 	'''sample_weight = [zero_weight_unk(y=y, sample_weight=compute_sample_weight(class_weight='balanced', 
 																			  y=y.to_numpy().argmax(axis=1)))
 					 for i, y in enumerate(Y_train)]
 	'''
+	ontology = load_otlg(args.otlg)
+	_, layer_units = parse_otlg(ontology)
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]
 	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
 	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
 	Y_train = [y.iloc[:, :-1] for y in Y_train]
-	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
+	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], ontology=ontology)
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 	model.nn.compile(optimizer=pretrain_opt,
 				  loss=CategoricalCrossentropy(),

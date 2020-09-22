@@ -1,13 +1,12 @@
 from ONN.src.model import Model
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
-from ONN.src.utils import read_genus_abu, read_labels, parse_otlg, transfer_weights, zero_weight_unk
+from ONN.src.utils import read_genus_abu, read_labels, parse_otlg, transfer_weights, zero_weight_unk, load_otlg
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.metrics import AUC
 from sklearn.utils.class_weight import compute_sample_weight
 import pandas as pd
 import numpy as np
-from tensorflow.distribute import MirroredStrategy
 import tensorflow as tf
 import os
 from configparser import ConfigParser
@@ -48,7 +47,8 @@ def transfer(args):
 	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=1e-4)
 	stopper = EarlyStopping(patience=stop_patience, verbose=5, restore_best_weights=True)
 
-	_, layer_units = parse_otlg(args.otlg)  # sources and layer units
+	ontology = load_otlg(args.otlg)
+	_, layer_units = parse_otlg(ontology)
 	'''sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1))
 					 for i, y in enumerate(Y_train)]'''
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]	
@@ -63,7 +63,7 @@ def transfer(args):
 	f_optimizer = Adam(lr=finetune_lr)
 
 	base_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], restore_from=args.model)
-	init_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], layer_units=layer_units)
+	init_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], ontology=ontology)
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
 	model.nn = model.build_graph(input_shape=(X_train.shape[1], ))

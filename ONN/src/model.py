@@ -7,7 +7,7 @@ import numpy as np
 from tensorflow.keras.callbacks import *
 from tensorflow.keras import backend as K
 from tensorflow.keras.constraints import NonNeg
-
+from ONN.src.utils import parse_otlg, load_otlg
 
 init = tf.keras.initializers.HeUniform(seed=2)
 #init = tf.keras.initializers.LecunNormal(seed=1)
@@ -17,38 +17,69 @@ sig_init = tf.keras.initializers.GlorotUniform(seed=2)
 
 class Model(object):
 
-	def __init__(self, phylogeny, num_features, cal_contribution=True, layer_units=None, restore_from=None):
+	def __init__(self, phylogeny, num_features, ontology=None, restore_from=None):
 		self.expand_dims = tf.expand_dims
 		self.concat = Concatenate(axis=1)
 		self.concat_a2 = Concatenate(axis=2)
-		if layer_units:
-			self.n_layers = len(layer_units)
-			self.encoder = self.init_encoder_block(phylogeny)
+		if ontology:
+			self.ontology = ontology
+			self.labels, self.layer_units = parse_otlg(self.ontology)
+			self.n_layers = len(self.layer_units)
 			self.base = self.init_base_block(num_features=num_features)
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer+2),
 													  n_units=n_units)
-							   for layer, n_units in enumerate(layer_units)]
-			#self.dropouts = [Dropout(0) for layer in range(self.n_layers)]
+								for layer, n_units in enumerate(self.layer_units)]
 			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer+2),
 														n_units=n_units)
-								 for layer, n_units in enumerate(layer_units)]
-			self.spec_outputs = [self.init_output_block(index=layer, name='l{}o'.format(layer+2),
-														n_units=n_units)
-								 for layer, n_units in enumerate(layer_units)]
+								for layer, n_units in enumerate(self.layer_units)]
+			self.spec_outputs = [self.init_output_block(index=layer, name='l{}o'.format(layer+2), n_units=n_units)
+								 for layer, n_units in enumerate(self.layer_units)]
 		elif restore_from:
 			self.__restore_from(restore_from)
 			self.n_layers = len(self.spec_outputs)
 		else:
 			raise ValueError('Please given correct model path to restore, '
 							 'or specify layer_units to build model from scratch.')
+		self.encoder = self.init_encoder_block(phylogeny)
 		self.spec_postprocs = [self.init_post_proc_layer(name='l{}'.format(layer + 2), cal_contribution=cal_contribution)
 							   for layer in range(self.n_layers)]
 		self.nn = self.build_graph(input_shape=(num_features,))
 
+	def save_blocks(self, path):
+		inters_dir = self.__pthjoin(path, 'inters')
+		integs_dir = self.__pthjoin(path, 'integs')
+		outputs_dir = self.__pthjoin(path, 'outputs')
+		for dir in [path, inters_dir, outputs_dir]:
+			if not os.path.isdir(dir):
+				os.mkdir(dir)
+		#self.feature_mapper.save(self.__pthjoin(path, 'feature_mapper'))
+		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
+		self.ontology.to_pickle(self.__pthjoin(path, 'ontology.pkl'))
+		for layer in range(self.n_layers):
+			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
+			self.spec_integs[layer].save(self.__pthjoin(integs_dir, str(layer)), save_format='tf')
+			self.spec_outputs[layer].save(self.__pthjoin(outputs_dir, str(layer)), save_format='tf')
+
+	def __restore_from(self, path):
+		#mapper_dir = self.__pthjoin(path, 'feature_mapper')
+		otlg_dir = self.__pthjoin(path, 'ontology.pkl')
+		base_dir = self.__pthjoin(path, 'base')
+		inters_dir = self.__pthjoin(path, 'inters')
+		integs_dir = self.__pthjoin(path, 'integs')
+		outputs_dir = self.__pthjoin(path, 'outputs')
+		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
+		integ_dirs = [self.__pthjoin(integs_dir, i) for i in os.listdir(integs_dir)]
+		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
+		self.ontology = load_otlg(otlg_dir)
+		self.labels, self.layer_units = parse_otlg(self.ontology)
+		self.base = tf.keras.models.load_model(base_dir)
+		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
+		self.spec_integs = [tf.keras.models.load_model(dir) for dir in integ_dirs]
+		self.spec_outputs = [tf.keras.models.load_model(dir) for dir in output_dirs]
+
 	def init_mapper_block(self, num_features): # map input feature to ...
 		block = tf.keras.Sequential(name='feature_mapper')
 		block.add(Mapper(num_features=num_features, name='feature_mapper_layer'))
-		#block.add(self._init_bn_layer())
 		return block
 
 	def init_encoder_block(self, phylogeny):
@@ -59,13 +90,10 @@ class Model(object):
 	def init_base_block(self, num_features):
 		block = tf.keras.Sequential(name='base')
 		block.add(Flatten()) # (1000, )
-		#block.add(Dropout(0.3, seed=1))
 		block.add(Dense(2**10, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
-		#block.add(Dropout(0.3, seed=1))
 		block.add(Dense(2**9, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
-		#block.add(Dropout(0.3, seed=1))
 		return block
 
 	def init_inter_block(self, index, name, n_units):
@@ -77,7 +105,6 @@ class Model(object):
 		block.add(Activation('relu'))
 		block.add(Dense(self._get_n_units(2*n_units), name='l' + str(k) + '_inter_fc2', kernel_initializer=init))
 		block.add(Activation('relu'))
-		#block.add(Dropout(0.4, seed=1))
 		return block
 
 	def _init_integ_block(self, index, name, n_units):
@@ -85,28 +112,16 @@ class Model(object):
 		k = index
 		block.add(Dense(self._get_n_units(4*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
 		block.add(Activation('tanh'))
-		#block.add(Dropout(0.4, seed=1))
 		return block
 
 	def init_output_block(self, index, name, n_units):
-		#input_shape = (128 * 2 if index > 0 else 128, )
 		k = index
 		block = tf.keras.Sequential(name=name)
 		block.add(Dense(n_units, name='l' + str(index+2) + 'o_fc', kernel_initializer=sig_init))
 		block.add(Activation('sigmoid'))
 		return block
 
-	def _get_dropout_rate(self, index, last_n_units, next_n_units):
-		prop = (last_n_units - next_n_units) / last_n_units
-		scale_0206 = lambda prop:  0.2 + (prop - 0.5) / 0.25 * 0.4
-		prop_scaled = scale_0206(prop)
-		print('_get_dropout_rate: ', prop_scaled)
-		return prop_scaled
-
-	def _init_bn_layer(self):
-		return BatchNormalization(momentum=0.9, scale=False)
-
-	def init_post_proc_layer(self, name, cal_contribution):
+	def init_post_proc_layer(self, name):
 		def calculateSourceContribution(x):
 			#x = K.relu(x)
 			total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
@@ -114,16 +129,13 @@ class Model(object):
 			contrib = K.concatenate((x, unknown_contrib), axis=1)
 			scaled_contrib = tf.divide(contrib, K.sum(contrib, keepdims=True, axis=1))
 			return scaled_contrib
-		
-		return Lambda(calculateSourceContribution if cal_contribution else K.tanh, name=name)
+		return Lambda(calculateSourceContribution, name=name)
 
 	def build_graph(self, input_shape):
 		inputs = Input(shape=input_shape)
-		#features = self.encoder(inputs)
-		features = inputs
+		features = self.encoder(inputs)
 		base = self.base(features)
 		inter_logits = [self.spec_inters[i](base) for i in range(self.n_layers)]
-		
 		integ_logits = []
 		for layer in range(self.n_layers):
 			if layer == 0:
@@ -131,52 +143,22 @@ class Model(object):
 			else:
 				logits = self.concat([integ_logits[layer-1], inter_logits[layer]])
 				integ_logits.append(self.spec_integs[layer](logits))
-				#integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
-		
 		out_probas = [self.spec_outputs[i](integ_logits[i]) for i in range(self.n_layers)]
-		
-		#outputs = [self.spec_postprocs[i](out_probas[i]) for i in range(self.n_layers)]
-		#nn = tf.keras.Model(inputs=inputs, outputs=outputs)
 		nn = tf.keras.Model(inputs=inputs, outputs=out_probas)
 		return nn
 
+	def build_estimator(self):
+		inputs = Input(shape=self.nn.input_shape)
+		logits = self.nn(inputs)
+		contrib = [self.spec_postprocs[i](logits[i]) for i in range(self.n_layers)]
+		est = tf.keras.Model(inputs=inputs, outputs=contrib)
+		return est
+
+	def _init_bn_layer(self):
+		return BatchNormalization(momentum=0.9, scale=False)
+
 	def _get_n_units(self, num):
-		# closest binary exponential number larger than num
 		return int(num)
-		#supported_range = 2**np.arange(1, 20)
-		#return supported_range[(supported_range < num).sum()]
-
-	def save_base_model(self, path):
-		self.base.save(path, save_format='tf')
-
-	def save_blocks(self, path):
-		inters_dir = self.__pthjoin(path, 'inters')
-		integs_dir = self.__pthjoin(path, 'integs')
-		outputs_dir = self.__pthjoin(path, 'outputs')
-		for dir in [path, inters_dir, outputs_dir]:
-			if not os.path.isdir(dir):
-				os.mkdir(dir)
-		#self.feature_mapper.save(self.__pthjoin(path, 'feature_mapper'))
-		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
-		for layer in range(self.n_layers):
-			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
-			self.spec_integs[layer].save(self.__pthjoin(integs_dir, str(layer)), save_format='tf')
-			self.spec_outputs[layer].save(self.__pthjoin(outputs_dir, str(layer)), save_format='tf')
-
-	def __restore_from(self, path):
-		#mapper_dir = self.__pthjoin(path, 'feature_mapper')
-		base_dir = self.__pthjoin(path, 'base')
-		inters_dir = self.__pthjoin(path, 'inters')
-		integs_dir = self.__pthjoin(path, 'integs')
-		outputs_dir = self.__pthjoin(path, 'outputs')
-		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
-		integ_dirs = [self.__pthjoin(integs_dir, i) for i in os.listdir(integs_dir)]
-		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
-		#self.feature_mapper = tf.keras.models.load_model(mapper_dir, custom_objects={'Mapper': Mapper})
-		self.base = tf.keras.models.load_model(base_dir)
-		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
-		self.spec_integs = [tf.keras.models.load_model(dir) for dir in integ_dirs]
-		self.spec_outputs = [tf.keras.models.load_model(dir) for dir in output_dirs]
 
 	def __pthjoin(self, pth1, pth2):
 		return os.path.join(pth1, pth2)
