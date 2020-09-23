@@ -57,15 +57,14 @@ def train(args):
 	ontology = load_otlg(args.otlg)
 	_, layer_units = parse_otlg(ontology)
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]
-	#Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
-	#X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
-	Y_train = [y.iloc[:, :-1] for y in Y_train]
+
 	model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], ontology=ontology)
 	X_train = model.encoder(X_train.to_numpy()).numpy().reshape(X_train.shape[0], X_train.shape[1] * phylogeny.shape[1])
 	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
-	np.save(os.path.join(args.tmp, 'mean_f.for.X_train.json'), Xf_stats['mean'])
-	np.save(os.path.join(args.tmp, 'var_f.for.X_train.json'), Xf_stats['std'])
+	np.save(os.path.join(args.tmp, 'mean_f.for.X_train.npy'), Xf_stats['mean'])
+	np.save(os.path.join(args.tmp, 'var_f.for.X_train.npy'), Xf_stats['std'])
 	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
+	Y_train = [y.iloc[:, :-1] for y in Y_train]
 	
 	os.environ["CUDA_VISIBLE_DEVICES"] = cfg.get('train', 'gpu')
 	gpus = tf.config.list_physical_devices('GPU')

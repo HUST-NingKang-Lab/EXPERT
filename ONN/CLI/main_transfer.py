@@ -1,9 +1,9 @@
 from ONN.src.model import Model
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
 from ONN.src.utils import read_genus_abu, read_labels, parse_otlg, transfer_weights, zero_weight_unk, load_otlg
-from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD
-from tensorflow.keras.metrics import AUC
+from tensorflow.keras.metrics import AUC, BinaryAccuracy
 from sklearn.utils.class_weight import compute_sample_weight
 import pandas as pd
 import numpy as np
@@ -53,25 +53,31 @@ def transfer(args):
 					 for i, y in enumerate(Y_train)]'''
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_train)]	
 	loss_weights = [units/sum(layer_units) for units in layer_units]
-	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
-	X_train = (X_train - Xf_stats['mean']) / (Xf_stats['std'])
-	#print(X_train.isna().sum().nlargest(n=10))
-	Y_train = [y.drop(columns=['Unknown']) for y in Y_train]
-	print('Total correct samples: {}?{}'.format(sum(X_train.index == Y_train[0].index), X_train.shape[0]))
 	
 	optimizer = Adam(lr=lr)
 	f_optimizer = Adam(lr=finetune_lr)
 
 	base_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], restore_from=args.model)
 	init_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], ontology=ontology)
+
+	X_train = init_model.encoder(X_train.to_numpy()).numpy().reshape(X_train.shape[0], X_train.shape[1] * phylogeny.shape[1])
+	Xf_stats = {}
+	Xf_stats['mean'] = np.load(os.path.join(args.tmp, 'mean_f.for.X_train.npy'))
+	Xf_stats['std'] = np.load(os.path.join(args.tmp, 'var_f.for.X_train.npy'))
+	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
+	Y_train = [y.drop(columns=['Unknown']) for y in Y_train]
+	print('Total correct samples: {}?{}'.format(sum(X_train.index == Y_train[0].index), X_train.shape[0]))
+
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
 	model.nn = model.build_graph(input_shape=(X_train.shape[1], ))
 	print('Training using optimizer with lr={}...'.format(lr))
 	model.nn.compile(optimizer=optimizer,
-				  loss=CategoricalCrossentropy(label_smoothing=label_smoothing),
+				  loss=BinaryCrossentropy(label_smoothing=label_smoothing),
 				  loss_weights=loss_weights, 
-				  weighted_metrics=['acc', AUC(num_thresholds=100, name='auc', curve='PR')])
+				  weighted_metrics=[BinaryAccuracy(name='acc'),
+									AUC(num_thresholds=100, name='auROC'),
+									AUC(num_thresholds=100, name='auPRC', curve='PR')])
 	model.nn.fit(X_train, Y_train, validation_split=0.1, batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
@@ -87,9 +93,11 @@ def transfer(args):
 			model.spec_outputs[layer].trainable = True
 		model.nn = model.build_graph(input_shape=(X_train.shape[1], ))
 		model.nn.compile(optimizer=f_optimizer,
-					  loss=CategoricalCrossentropy(label_smoothing=label_smoothing),
-					  loss_weights=loss_weights,
-					  weighted_metrics=['acc', AUC(num_thresholds=100, name='auc', curve='PR')])
+						 loss=BinaryCrossentropy(label_smoothing=label_smoothing),
+						 loss_weights=loss_weights,
+						 weighted_metrics=[BinaryAccuracy(name='acc'),
+										   AUC(num_thresholds=100, name='auROC'),
+										   AUC(num_thresholds=100, name='auPRC', curve='PR')])
 		model.nn.fit(X_train, Y_train, validation_split=0.1,
 				  batch_size=batch_size,
 				  epochs=finetune_eps,
