@@ -88,8 +88,8 @@ def train(args):
 				  loss=BinaryCrossentropy(),
 				  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(),
 				  weighted_metrics=[BinaryAccuracy(name='acc'), 
-				  					AUC(num_thresholds=100, name='auROC'), 
-									AUC(num_thresholds=100, name='auPRC', curve='PR')])
+				  					AUC(num_thresholds=100, name='auROC', multi_label=False), 
+									AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
 	model.nn.fit(X_train, Y_train, validation_split=0.1, #validation_data=(X_test, Y_test),
 			  batch_size=batch_size, initial_epoch=pretrain_ep, epochs=epochs + pretrain_ep,
 			  sample_weight=sample_weight,

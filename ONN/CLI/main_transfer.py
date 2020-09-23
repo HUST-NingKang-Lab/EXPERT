@@ -60,13 +60,13 @@ def transfer(args):
 	base_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], restore_from=args.model)
 	init_model = Model(phylogeny=phylogeny, num_features=X_train.shape[1], ontology=ontology)
 
+	print('Total correct samples: {}?{}'.format(sum(X_train.index == Y_train[0].index), X_train.shape[0]))
 	X_train = init_model.encoder(X_train.to_numpy()).numpy().reshape(X_train.shape[0], X_train.shape[1] * phylogeny.shape[1])
 	Xf_stats = {}
 	Xf_stats['mean'] = np.load(os.path.join(args.tmp, 'mean_f.for.X_train.npy'))
 	Xf_stats['std'] = np.load(os.path.join(args.tmp, 'var_f.for.X_train.npy'))
 	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
 	Y_train = [y.drop(columns=['Unknown']) for y in Y_train]
-	print('Total correct samples: {}?{}'.format(sum(X_train.index == Y_train[0].index), X_train.shape[0]))
 
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
@@ -76,8 +76,8 @@ def transfer(args):
 				  loss=BinaryCrossentropy(label_smoothing=label_smoothing),
 				  loss_weights=loss_weights, 
 				  weighted_metrics=[BinaryAccuracy(name='acc'),
-									AUC(num_thresholds=100, name='auROC'),
-									AUC(num_thresholds=100, name='auPRC', curve='PR')])
+									AUC(num_thresholds=100, name='auROC', multi_label=False),
+									AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
 	model.nn.fit(X_train, Y_train, validation_split=0.1, batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
@@ -96,8 +96,8 @@ def transfer(args):
 						 loss=BinaryCrossentropy(label_smoothing=label_smoothing),
 						 loss_weights=loss_weights,
 						 weighted_metrics=[BinaryAccuracy(name='acc'),
-										   AUC(num_thresholds=100, name='auROC'),
-										   AUC(num_thresholds=100, name='auPRC', curve='PR')])
+										   AUC(num_thresholds=100, name='auROC', multi_label=False),
+										   AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
 		model.nn.fit(X_train, Y_train, validation_split=0.1,
 				  batch_size=batch_size,
 				  epochs=finetune_eps,
@@ -106,6 +106,7 @@ def transfer(args):
 		
 		model.save_blocks(args.o)
 		sample_weight_test = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_test)]	
+		X_test = init_model.encoder(X_test.to_numpy()).numpy().reshape(X_test.shape[0], X_test.shape[1] * phylogeny.shape[1])
 		X_test = (X_test - Xf_stats['mean']) / Xf_stats['std']
 		Y_test = [y.drop(columns=['Unknown']) for y in Y_test]
 		model.nn.evaluate(X_test, Y_test, sample_weight=sample_weight_test)
