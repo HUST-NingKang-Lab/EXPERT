@@ -10,7 +10,7 @@ from tensorflow.keras.constraints import NonNeg
 
 
 init = tf.keras.initializers.HeUniform(seed=2)
-#init = tf.keras.initializers.LecunNormal(seed=1)
+#init = tf.keras.initializers.LecunNormal(seed=2)
 sig_init = tf.keras.initializers.GlorotUniform(seed=2)
 
 
@@ -41,7 +41,7 @@ class Model(object):
 							 'or specify layer_units to build model from scratch.')
 		self.encoder = self.init_encoder_block(phylogeny)
 		self.spec_postprocs = [self.init_post_proc_layer(name='l{}'.format(layer + 2)) for layer in range(self.n_layers)]
-		self.nn = self.build_graph(input_shape=(num_features,))
+		self.nn = self.build_graph(input_shape=(num_features * phylogeny.shape[1],))
 
 	def save_blocks(self, path):
 		inters_dir = self.__pthjoin(path, 'inters')
@@ -87,9 +87,7 @@ class Model(object):
 
 	def init_base_block(self, num_features):
 		block = tf.keras.Sequential(name='base')
-		block.add()
 		block.add(Flatten()) # (1000, )
-		block.add(self._init_bn_layer())
 		block.add(Dense(2**10, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
 		block.add(Dense(2**9, kernel_initializer=init))
@@ -110,7 +108,7 @@ class Model(object):
 	def _init_integ_block(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
-		block.add(Dense(self._get_n_units(4*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
+		block.add(Dense(self._get_n_units(3*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
 		block.add(Activation('tanh'))
 		return block
 
@@ -133,7 +131,8 @@ class Model(object):
 
 	def build_graph(self, input_shape):
 		inputs = Input(shape=input_shape)
-		features = self.encoder(inputs)
+		#features = self.encoder(inputs)
+		features = inputs
 		base = self.base(features)
 		inter_logits = [self.spec_inters[i](base) for i in range(self.n_layers)]
 		integ_logits = []
@@ -141,7 +140,7 @@ class Model(object):
 			if layer == 0:
 				integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 			else:
-				logits = self.concat([integ_logits[layer-1], inter_logits[layer]])
+				logits = self.concat([0.1 * integ_logits[layer-1], inter_logits[layer]])
 				integ_logits.append(self.spec_integs[layer](logits))
 		out_probas = [self.spec_outputs[i](integ_logits[i]) for i in range(self.n_layers)]
 		nn = tf.keras.Model(inputs=inputs, outputs=out_probas)
