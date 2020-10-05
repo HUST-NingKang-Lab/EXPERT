@@ -1,8 +1,8 @@
 from joblib import Parallel, delayed
 import pandas as pd
 import os
-from ONN.src.utils import read_input_list, runid_from_taxassign, format_sample_info # biome, meta, desc
-from ONN.src.resources import MGnify
+from expert.src.utils import read_input_list, runid_from_taxassign, format_sample_info # biome, meta, desc
+from expert.src.resources import MGnify
 from tqdm import tqdm, trange
 from functools import reduce
 import urllib.request

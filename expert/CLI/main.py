@@ -1,4 +1,4 @@
-from ONN.src.utils import get_CLI_parser
+from expert.src.utils import get_CLI_parser
 import sys
 
 
@@ -7,39 +7,39 @@ def main():
 	#parser.print_help()
 	args = parser.parse_args()
 	if args.mode == 'init':
-		from ONN.CLI.main_init import init
+		from expert.CLI.main_init import init
 		init(args)
 		sys.exit(0)
 	elif args.mode == 'download':
-		from ONN.CLI.main_download import download
+		from expert.CLI.main_download import download
 		download(args)
 		sys.exit(0)
 	elif args.mode == 'construct':
-		from ONN.CLI.main_construct import construct
+		from expert.CLI.main_construct import construct
 		construct(args)
 		sys.exit(0)
 	elif args.mode == 'map':
-		from ONN.CLI.main_map import map
+		from expert.CLI.main_map import map
 		map(args)
 		sys.exit(0)
 	elif args.mode == 'convert':
-		from ONN.CLI.main_convert import convert
+		from expert.CLI.main_convert import convert
 		convert(args)
 		sys.exit(0)
 	elif args.mode == 'select':
-		from ONN.CLI.main_select import select
+		from expert.CLI.main_select import select
 		select(args)
 		sys.exit(0)
 	elif args.mode == 'train':
-		from ONN.CLI.main_train import train
+		from expert.CLI.main_train import train
 		train(args)
 		sys.exit(0)
 	elif args.mode == 'transfer':
-		from ONN.CLI.main_transfer import transfer
+		from expert.CLI.main_transfer import transfer
 		transfer(args)
 		sys.exit(0)
 	elif args.mode == 'search':
-		from ONN.CLI.main_search import search
+		from expert.CLI.main_search import search
 		search(args)
 		sys.exit(0)
 	else:

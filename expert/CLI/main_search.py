@@ -1,4 +1,4 @@
-from ONN.src.model import Model
+from expert.src.model import Model
 import tensorflow as tf, pandas as pd, os
 
 

@@ -1,6 +1,6 @@
-from ONN.src.model import Model
+from expert.src.model import Model
 from tensorflow.keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping
-from ONN.src.utils import read_genus_abu, read_matrices, read_labels, load_otlg, zero_weight_unk, parse_otlg
+from expert.src.utils import read_genus_abu, read_matrices, read_labels, load_otlg, zero_weight_unk, parse_otlg
 from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop, Nadam
 from tensorflow.keras.metrics import AUC, BinaryAccuracy

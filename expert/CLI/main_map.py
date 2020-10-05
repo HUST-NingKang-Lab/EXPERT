@@ -1,4 +1,4 @@
-from ONN.src.utils import load_ontology, meta_from_dir, map_to_ontology
+from expert.src.utils import load_ontology, meta_from_dir, map_to_ontology
 import pandas as pd
 from tqdm import tqdm
 
