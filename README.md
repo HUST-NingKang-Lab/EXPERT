@@ -42,7 +42,7 @@ expert map -to-otlg -otlg tmp/ontology.pkl -i tmp/mapper.csv -o tmp/out/labels.h
 
 #### Data converting & cleaning
 
-Convert input data to a count matrix in genus level
+Convert input data to a count matrix in **genus** level
 
 ```shell script
 expert convert -i tmp/sample-list.txt -tmp tmp -o data/countmatrix_genus.h5 -db ~/.etetoolkit/taxa.sqlite
@@ -98,7 +98,7 @@ Notice that here is a header "# Constructed from biom file" in the first line.
 
 ## Support
 
-Feel free to contact us if you have any question. Thank you for using Ontology-aware neural network.
+Feel free to contact us if you have any question. Thank you for using EXPERT.
 
 ## License
 
