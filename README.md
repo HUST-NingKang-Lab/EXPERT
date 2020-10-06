@@ -103,3 +103,10 @@ Feel free to contact us if you have any question. Thank you for using EXPERT.
 ## License
 
 [![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
+
+## Maintainer
+
+|   Name    | Email                | Organization                                                 |
+| :-------: | -------------------- | ------------------------------------------------------------ |
+| Hui Chong | huichong@gmail.com   | Research Assistant, School of Life Science and Technology, Huazhong University of Science & Technology |
+| Kang Ning | ningkang@hust.edu.cn | Professor, School of Life Science and Technology, Huazhong University of Science & Technology |
