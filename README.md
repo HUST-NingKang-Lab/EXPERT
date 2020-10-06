@@ -1,30 +1,46 @@
-# Generalized Ontology-aware Neural Network
+# EXPERT
 
-Generalized ontology-aware neural network for ontological data mining.
+**EXPERT**: an exact and pervasive expert model for source tracking based on transfer learning. Based on Ontology-aware Neural Network architecture, EXPERT was trained using information-weighted loss to selectively learn from the training data, thus bypassing the negative impact of incomplete biome source information of data. Transfer learning technique was used to better adapt to novel biome ontology in a timely manner. 
 
-Using number of sample > 50 sources data.**
+The program is designed to help you to transfer Ontology-aware Neural Network model to other source tracking tasks. 
+
+## Support 
+
+Feel free to contact us if you have any question. Thank you for using Ontology-aware neural network.
 
 ## Deployment
 
 ```shell script
-pip install GONN
+python setup.py install
 ```
+
+## Input formats
+
+Generally, EXPERT takes two kinds of `abundance data` and a `mapper file` (when transferring to other tasks) as inputs.
+
+### Taxonomic assignments result for a single sample (OTU table)
+
+Notice that here is a header "# Constructed from biom file" in the first line.
+
+<table><thead><tr><th colspan="3"># Constructed from biom file</th></tr></thead><tbody><tr><td># OTU ID</td><td>ERR1754760</td><td>taxonomy</td></tr><tr><td>207119</td><td>19.0</td><td>sk__Archaea</td></tr><tr><td>118090</td><td>45.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__;o__Nitrosopumilales;f__Nitro...</td></tr><tr><td>153156</td><td>38.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__;o__Nitrosopumilales;f__Nitro...</td></tr><tr><td>131704</td><td>1.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__Nitrososphaeria;o__Nitrososp...</td></tr><tr><td>103181</td><td>5174.0</td><td>sk__Bacteria</td></tr><tr><td>157361</td><td>9.0</td><td>sk__Bacteria;k__;p__;c__;o__;f__;g__;s__agricultural_soil_bacterium_SC-I-11</td></tr></tbody></table>
+
+### Taxonomic assignments result for multiple samples (count matrix)
+
+<table><thead><tr><th>#SampleID</th><th>ERR1844510</th><th>ERR1844449</th><th>ERR1844450</th><th>ERR1844451</th></tr></thead><tbody><tr><td>sk__Archaea</td><td>1.0</td><td>17.0</td><td>8.0</td><td>16.0</td></tr><tr><td>sk__Archaea;k__;p__Crenarchaeota</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Euryarchaeota</td><td>8.0</td><td>2.0</td><td>3.0</td><td>1.0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...;o__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody></table>
+
+### Mapper file
+
+<table><thead><tr><th></th><th>Env</th><th>SampleID</th></tr></thead><tbody><tr><td>0</td><td>root:Engineered:Wastewater</td><td>ERR2260442</td></tr><tr><td>1</td><td>root:Engineered:Wastewater</td><td>SRR980322</td></tr><tr><td>2</td><td>root:Engineered:Wastewater</td><td>ERR2985272</td></tr><tr><td>3</td><td>root:Engineered:Wastewater</td><td>ERR2814648</td></tr><tr><td>4</td><td>root:Engineered:Wastewater</td><td>ERR2985275</td></tr></tbody></table>
 
 ## Usage
 
+
+
 ## Demo
-
-Change working directory.
-
-```shell script
-cd others
-```
 
 Getting a list of input files.
 
-```shell script
-ls ../data/*/*  > tmp/sample-list.txt
-```
+
 
 Constructing microbiome ontology using microbiomes.txt.
 
@@ -67,8 +83,3 @@ ONN train -i data/matrix-genus-for-soil-C1e-3.h5 -label data/labels-for-soil.h5 
 ## License
 
 [![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
-
-## Reference
-
-- [如何从模板创建仓库？](https://help.github.com/cn/articles/creating-a-repository-from-a-template)
-- [如何发布自己的包到 pypi ？](https://www.v2ai.cn/python/2018/07/30/PY-1.html)
