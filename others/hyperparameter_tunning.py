@@ -135,7 +135,7 @@ class Model(tf.keras.Model):
 		block.add(Dense(64, name='l'+str(k)+'_inter_dense_2', use_bias=True, kernel_initializer=ln_init))
 		#block.add(BatchNormalization())
 		#block.add(Activation('relu'))
-		#block.add(Dense(num_units[1], name='l'+str(k)+'_inter_dense_3', use_bias=True, kernel_initializer=he_normal))
+		#block.add(Dense(num_units[1], name='l'+str(k)+'_inter_dense_3', use_bias=True, kernel_initializer=he_uniform))
 		return block
 
 	def init_kth_out_block(self, k: int, out_units):
@@ -148,7 +148,7 @@ class Model(tf.keras.Model):
 		#block.add(BatchNormalization())
 		block.add(Activation('relu'))
 		#block.add(Dropout(0.3))
-		#block.add(Dense(num_units[0], name='l'+str(k)+'_out_dense_1', use_bias=True, kernel_initializer=he_normal))
+		#block.add(Dense(num_units[0], name='l'+str(k)+'_out_dense_1', use_bias=True, kernel_initializer=he_uniform))
 		#block.add(BatchNormalization())
 		#block.add(Activation('relu'))
 		#block.add(Dropout(0.3))
