@@ -80,7 +80,7 @@ Run the program with `-h` option to see a detailed description on work modes & o
 
 ## Input formats
 
-EXPERT takes two kinds of **abundance data** as inputs. and a **mapper file** (when transferring to other tasks) as inputs. 
+EXPERT takes two kinds of **abundance data** and a **mapper file** (when transferring to other tasks) as inputs. 
 
 #### Taxonomic assignments result for a single sample (OTU table)
 
