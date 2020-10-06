@@ -1,6 +1,6 @@
 # EXPERT
 
-##### Exact and pervasive expert model for source tracking based on transfer learning
+### Exact and pervasive expert model for source tracking based on transfer learning
 
 ## Introduction
 
@@ -11,7 +11,7 @@ The program is designed to help you to transfer Ontology-aware Neural Network mo
 ## Main features
 
 - Fast, accurate and interpretable source tracking via **Ontology-aware Neural Network architecture**
-- Selectively learning from training data via **information-weighted loss**
+- Selective learning from training data via **information-weighted loss**
 - Fast adaptation to novel biome ontology via **transfer learning**
 - Ultra-fast data cleaning via **in-memory NCBI taxonomy database**
 - Parallelized feature encoding via `Tensorflow.keras`
