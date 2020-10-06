@@ -42,7 +42,7 @@ expert map -to-otlg -otlg tmp/ontology.pkl -i tmp/mapper.csv -o tmp/out/labels.h
 
 #### Data converting & cleaning
 
-Convert input data to a count matrix at genus level
+Convert input data to a count matrix in genus level
 
 ```shell script
 expert convert -i tmp/sample-list.txt -tmp tmp -o data/countmatrix_genus.h5 -db ~/.etetoolkit/taxa.sqlite
