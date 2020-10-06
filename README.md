@@ -2,6 +2,8 @@
 
 Generalized ontology-aware neural network for ontological data mining.
 
+Using number of sample > 50 sources data.**
+
 ## Deployment
 
 ```shell script
@@ -45,21 +47,22 @@ ONN map -to-otlg -otlg tmp/ontology.pkl -i tmp/mapper.csv -o tmp/out/labels.h5 -
 Converting input data to a count matrix at genus level and generating phylogeny using the taxonomic entries data, Prepare for selecting top n important entries.
 
 ```shell script
-ONN convert -gen-phylo -i tmp/sample-list.txt -conf tmp/conf -o tmp/out/countmatrix_genus.h5 -db ~/.etetoolkit/taxa.sqlite
+ONN convert -i tmp/sample-list.txt -tmp tmp -o data/countmatrix_genus.h5 -db ~/.etetoolkit/taxa.sqlite
 ```
 
-Selecting top 1000 important phylogeny.
+Selecting phylogeny.
 
 ```shell script
-ONN select -i tmp/conf/phylogeny_by_transformer.csv -cm tmp/out/countmatrix_genus.h5 -o tmp/conf/phylogeny_top1000.csv -top 1000 -labels tmp/out/labels.h5 -dmax 5
+ONN select -i data/countmatrix_genus.h5 -phylo tmp/phylogeny_by_transformer.csv -o data/countmatrix_genus_selected.h5 -C 1e-3 -labels data/labels.h5 -dmax 5 -tmp tmp
 ```
 
-Converting input data to count matrix at each rank in [sk, p, c, o, f, g].
+Building ONN model from scratch and training.
 
-
-```shell script
-ONN convert -i tmp/sample-list.txt -conf tmp/conf -o tmp/out/countmatrix_each_rank.h5 -db ~/.etetoolkit/taxa.sqlite -phylo tmp/conf/phylogeny_top1000.csv
+```bash
+ONN train -i data/matrix-genus-for-soil-C1e-3.h5 -label data/labels-for-soil.h5 -otlg config/ontology-for-soil.pkl -end-idx -1 -split-idx 10240 -log logs/training-history-for-soil.csv -dmax 6 -o ./models/model-for-soil -cfg ../../config/config.ini -phylo tmp/phylogeny_selected_using_varianceThreshold_C0.001.csv
 ```
+
+
 
 ## License
 
