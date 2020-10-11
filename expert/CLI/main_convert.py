@@ -1,4 +1,4 @@
-from expert.src.utils import samples_to_countmatrix, merge_countmatrices, scale_abundance, load_ontology
+from expert.src.utils import samples_to_countmatrix, merge_countmatrices, scale_abundance
 from expert.src.preprocessing import Transformer
 import pandas as pd
 from tqdm import tqdm

@@ -20,9 +20,10 @@ def transfer(args):
 	cfg.read(args.cfg)
 	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 	os.environ["CUDA_VISIBLE_DEVICES"] = cfg.get('train', 'gpu')
-	gpus = tf.config.list_physical_devices('GPU')
-	for gpu in gpus:
-		tf.config.experimental.set_memory_growth(gpu, True)
+	if args.gpu > -1:
+		gpus = tf.config.list_physical_devices('GPU')
+		for gpu in gpus:
+			tf.config.experimental.set_memory_growth(gpu, True)
 
 	X_train, X_test, shuffle_idx = read_genus_abu(args.i, split_idx=args.split_idx, end_idx=args.end_idx)
 	Y_train, Y_test = read_labels(args.labels, shuffle_idx=shuffle_idx, split_idx=args.split_idx,

@@ -1,12 +1,11 @@
 import os
+import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization, Concatenate, \
 	Conv2D, Activation, Lambda, Layer, Input, GaussianNoise, AlphaDropout
-import tensorflow as tf
 from collections import OrderedDict
 import numpy as np
 from tensorflow.keras.callbacks import *
 from tensorflow.keras import backend as K
-from tensorflow.keras.constraints import NonNeg
 from livingTree import SuperTree
 
 init = tf.keras.initializers.HeUniform(seed=2)
