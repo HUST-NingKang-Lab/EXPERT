@@ -5,7 +5,6 @@ from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop, Nadam
 from tensorflow.keras.metrics import AUC, BinaryAccuracy
 from sklearn.utils.class_weight import compute_sample_weight, compute_class_weight
-from tensorflow.distribute import MirroredStrategy
 from configparser import ConfigParser
 import tensorflow as tf, numpy as np, pandas as pd, os
 import tensorflow.keras.backend as K
@@ -15,7 +14,7 @@ def train(args):
 	cfg = ConfigParser()
 	cfg.read(args.cfg)
 	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-	os.environ["CUDA_VISIBLE_DEVICES"] = ''
+	os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 	X_train, X_test, shuffle_idx = read_genus_abu(args.i, split_idx=args.split_idx, end_idx=args.end_idx)
 	Y_train, Y_test = read_labels(args.labels, shuffle_idx=shuffle_idx, split_idx=args.split_idx,
 								  end_idx=args.end_idx, dmax=args.dmax)

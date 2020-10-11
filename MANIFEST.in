@@ -2,7 +2,7 @@ include LICENSE
 include README.md
 include requirements.txt
 
-recursive-include ONN *
+recursive-include expert *
 
 recursive-exclude * *.pyc
 recursive-exclude * .DS_Store

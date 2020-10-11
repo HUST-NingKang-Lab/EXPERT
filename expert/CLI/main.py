@@ -1,9 +1,10 @@
-from expert.src.utils import get_CLI_parser
+import expert.CLI.CLI_utils
 import sys
+import os
 
 
 def main():
-	parser = get_CLI_parser()
+	parser = expert.CLI.CLI_utils.get_CLI_parser()
 	#parser.print_help()
 	args = parser.parse_args()
 	if args.mode == 'init':

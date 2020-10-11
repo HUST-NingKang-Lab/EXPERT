@@ -1,13 +1,11 @@
 import pandas as pd
 import numpy as np
-import argparse
 from functools import reduce
 from livingTree import SuperTree
 import os
 from tqdm import tqdm
 from collections import OrderedDict
 from pandas.io.json._normalize import nested_to_record
-from expert.src.model import Model
 
 
 def zero_weight_unk(y, sample_weight):
@@ -16,7 +14,8 @@ def zero_weight_unk(y, sample_weight):
 	sample_weight = sample_weight / (1e-8 + 1 - zero_weight_idx.sum() / zero_weight_idx.shape[0])
 	return sample_weight
 
-def transfer_weights(base_model: Model, init_model: Model, new_mapper, reuse_levels):
+
+def transfer_weights(base_model, init_model, new_mapper, reuse_levels):
 	init_model.base = base_model.base
 	init_model.base.trainable = False
 	'''if not new_mapper:
@@ -45,12 +44,15 @@ def transfer_weights(base_model: Model, init_model: Model, new_mapper, reuse_lev
 			raise ValueError('The maximum reuse_level is 3, check your config.')
 	return init_model
 
+
 def read_input_list(path):
 	with open(path, 'r') as f:
 		return f.read().splitlines()
 
+
 def runid_from_taxassign(path):
 	return pd.read_csv(path, sep='\t', nrows=1, index_col=0).columns.tolist()
+
 
 def format_sample_info(sample_and_status):
 	sample = sample_and_status[0]
@@ -65,6 +67,7 @@ def format_sample_info(sample_and_status):
 	#print(metadata)
 	return metadata
 
+
 def read_matrices(path, split_idx, end_idx):
 	include_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
 	matrices = np.array([pd.read_hdf(path, key=rank).T for rank in include_ranks])
@@ -76,9 +79,11 @@ def read_matrices(path, split_idx, end_idx):
 	matrices = matrices[idx]
 	return matrices[0:split_idx], matrices[split_idx:end_idx], idx
 
+
 def generate_unk(df):
 	df['Unknown'] = 1 - df.sum(axis=1)
 	return df
+
 
 def read_genus_abu(path, split_idx, end_idx):
 	genus_abu = pd.read_hdf(path, key='genus').T
@@ -88,15 +93,18 @@ def read_genus_abu(path, split_idx, end_idx):
 	genus_abu = genus_abu.iloc[idx, :]
 	return genus_abu.iloc[0:split_idx, :], genus_abu.iloc[split_idx:end_idx, :], idx
 
+
 def read_labels(path, shuffle_idx, split_idx, end_idx, dmax):
 	# unk should be generated in map op, not here remember to fix
 	labels = [generate_unk(pd.read_hdf(path, key='l'+str(layer))).iloc[shuffle_idx, :] for layer in range(dmax)]
 	return [label[0:split_idx] for label in labels[1:]], \
 		   [label[split_idx:end_idx] for label in labels[1:]] # except for layer 0 -> root 
 
+
 def load_otlg(path):
 	otlg = SuperTree().from_pickle(path)
 	return otlg
+
 
 def parse_otlg(ontology):
 	labels = OrderedDict([(layer, label) for layer, label in ontology.get_ids_by_level().items()
@@ -104,8 +112,10 @@ def parse_otlg(ontology):
 	layer_units = [len(label) for layer, label in labels.items()]
 	return labels, layer_units
 
+
 def str_sum(iterable):
 	return reduce(lambda x, y: x + y, iterable)
+
 
 def samples_to_countmatrix(tsvs):
 	keep_tax_abu = lambda x: x.loc[x['taxonomy'].str.contains('k__'),
@@ -115,11 +125,13 @@ def samples_to_countmatrix(tsvs):
 	matrix = pd.concat(tsvs_keep, axis=1, join='outer') # add progress bar
 	return matrix.fillna(0)
 
+
 def merge_countmatrices(sub_matrices):
 	clean = lambda x: x.loc[x.index.to_series().str.contains('k__'), :]
 	matrix = reduce(lambda x, y: pd.merge(left=x, right=y, left_index=True, right_index=True, how='outer'),
 					sub_matrices)
 	return matrix.fillna(0)
+
 
 def meta_from_dir(dir_):
 	biomes = [os.path.join(dir_, biome) for biome in os.listdir(dir_)]
@@ -128,6 +140,7 @@ def meta_from_dir(dir_):
 						columns=['Env', 'SampleID'])
 	meta['SampleID'] = meta['SampleID'].str.extract(pat='([SED]RR.[0-9]{1,})')
 	return meta
+
 
 def map_to_ontology(mapper, otlg, unk):
 	ids_by_level = {level: pd.Series(ids) for level, ids in otlg.get_ids_by_level().items()}
@@ -148,128 +161,10 @@ def map_to_ontology(mapper, otlg, unk):
 		labels_by_level[level] = labels_df
 	return labels_by_level
 
+
 def scale_abundance(matrix):
 	return matrix / matrix.sum()
 
-def get_CLI_parser():
-	# unknown abundance data -> convert -> select (filter) -> extract
-	# training data -> convert -> select -> mix -> extract
-	modes = ['init', 'download', 'map', 'construct', 'convert', 'select', 'train', 'transfer', 'search']
-	# noinspection PyTypeChecker
-	parser = argparse.ArgumentParser(
-		description=('The program is designed to help you to transfer Ontology-aware Neural Network model '
-					 'to other source tracking tasks.\n'
-					 'Feel free to contact us if you have any question.\n'
-					 'For more information, see Github. Thank you for using Ontology-aware neural network.'),
-		formatter_class=argparse.RawDescriptionHelpFormatter)
-	parser.add_argument('mode', type=str, default='search', choices=modes,
-						help='The work mode for expert program.')
-	parser.add_argument('-i', type=str, default=None,
-						help='The input file, see input format for each work mode.')
-	parser.add_argument('-o', type=str, default=None,
-						help='The output file, see output format for each work mode.')
-	parser.add_argument('-cfg', type=str, default=None,
-						help='The config.ini file.')
-	parser.add_argument('-tmp', type=str, default=None,
-						help="The path to save temperature files.")
-	parser.add_argument('-p', type=int, default=1,
-						help='The number of processors to use.')
-	parser.add_argument('-otlg', type=str, default=None,
-						help='The path to microbiome ontology.')
-	parser.add_argument('-labels', type=str, default=None,
-						help='The path to npz file (storing labels for the input data).')
-	parser.add_argument('-phylo', type=str, default=None,
-						help="The phylogeny tree to use, in tsv format.")
-	parser.add_argument('-dmax', type=int,
-						help='The max depth of the ontology.')
-	parser.add_argument('-gpu', type=int,
-						help='-1: CPU only, 0: GPU0, 1: GPU1, ...')
-
-	# ------------------------------------------------------------------------------------------------------------------
-	construct = parser.add_argument_group(
-		title='construct', description='Constructing ontology using microbiome structure ".txt" file.\n' 
-					'Input: microbiome structure ".txt" file. Output: Constructed microbiome ontology.')
-	construct.add_argument('-show', action='store_true', help='Printing the ontology to stdout.')
-
-	# ------------------------------------------------------------------------------------------------------------------
-	map = parser.add_argument_group(
-		title='map', description='`-from-dir`: Getting mapper file from directory.\n'
-								 'Input: The directory to generate mapper file, Output: mapper file.\n'
-								 '`-to-otlg`: Mapping source environments to microbiome ontology.\n'
-								 'Input: The mapper file, Output: The ontologically arranged labels.')
-	map.add_argument('-from-dir', action='store_true', help='Getting mapper file from directory.')
-	map.add_argument('-to-otlg', action='store_true',
-					 help='Mapping source environments to microbiome ontology.')
-	map.add_argument('-unk', action='store_true',
-					 help='Whether to include Unknown source when generating labels.')
-
-	# ------------------------------------------------------------------------------------------------------------------
-	convert = parser.add_argument_group(
-		title='convert', description='Converting input abundance data to countmatrix at Genus level and '
-									 'generating phylogeny using taxonomic entries involved in the data.\n'
-									 'Preparing for feature selection\n'
-									 'Input: the input data, Output: RRDM at Genus level')
-	convert.add_argument('-db', type=str, default='/root/.etetoolkit/taxa.sqlite',
-						help="The NCBI taxonomy database file to use, in sqlite format.")
-	convert.add_argument('-in-cm', action='store_true',
-						help="Whether to use the countmatrix as the input format.")
-
-	# ------------------------------------------------------------------------------------------------------------------
-	select = parser.add_argument_group(
-		title='select', description='Selecting features above the threshold. Variance and importance are '
-									'calculated using Pandas and RandomForestRegressor, respectively.\n'
-									'Input: countmatrix generated by `expert convert`, '
-									'Output: selected features and phylogeny (tmp).')
-	select.add_argument('-filter-only', action='store_true',
-						help='Filter features using a selected phylogeny.')
-	select.add_argument('-use-rf', action='store_true',
-						help="Whether to use the randomForest when performing selection.")
-	select.add_argument('-C', type=float, default=1e-3,
-						help='The coefficient C in `Threshold = C * mean(stat)`.')
-
-	# ------------------------------------------------------------------------------------------------------------------
-	train = parser.add_argument_group(
-		title='train', description='Training expert model, the microbiome ontology and properly labeled data '
-								   'must be provided.\n'
-								   'Input: samples, in pandas h5 format, output: expert model')
-	train.add_argument('-split-idx', type=int, default=None,
-					   help='The index to split training and validation samples.')
-	train.add_argument('-end-idx', type=int, default=None,
-					   help='The index to split validation and testing samples.')
-	train.add_argument('-log', type=str, default=None,
-					   help='The path to store training history of expert model.')
-
-	# ------------------------------------------------------------------------------------------------------------------
-	transfer = parser.add_argument_group(
-		title='transfer', description='Transferring expert model to fit in a new ontology, The microbiome ontology '
-									  'and properly labeled data must be provided.\n')
-	transfer.add_argument('-base', type=str, default=None,
-						  help='The path to base feature extractor model.')
-
-	# ------------------------------------------------------------------------------------------------------------------
-	search = parser.add_argument_group(
-		title='search', description='Searching for source environments of your microbial samples using expert model.\n')
-	search.add_argument('-model', type=str, default=None,
-						help='The path to expert model to search against.')
-	search.add_argument('-ofmt', type=str, default=None,
-						help='The output format.')
-	return parser
-
-
-def extract_RRDM(F, ):
-	'''
-
-	:param F:
-	:return:
-		else:
-		phylo = pd.read_csv(args.phylo, index_col=0)
-		tm = Transformer(conf_path=args.tmp, phylogeny=phylo, db_file=args.db)
-		matrix_by_rank = tm._extract_layers(matrix, included_ranks=included_ranks)
-		print('Saving results...')
-		for rank, matrix in matrix_by_rank.items():
-			matrix.to_hdf(args.o, key=rank, mode='a')
-	'''
-	pass
 
 def get_extractor(model, begin_layer, end_layer):
 	return None

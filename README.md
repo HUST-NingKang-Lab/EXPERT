@@ -6,7 +6,7 @@
 
 Based on Ontology-aware Neural Network architecture, EXPERT was trained using information-weighted loss to selectively learn from the training data, thus bypassing the negative impact of incomplete biome source information of data. Transfer learning technique was used to better adapt to novel biome ontology in a timely manner. 
 
-The program is designed to help you to transfer Ontology-aware Neural Network model to other source tracking tasks. 
+The program is designed to help you to transfer Ontology-aware Neural Network model to other source tracking tasks. Feel free to contact us if you have any question. Thank you for using EXPERT.
 
 ## Main features
 
@@ -96,10 +96,13 @@ Notice that here is a header "# Constructed from biom file" in the first line.
 
 <table><thead><tr><th></th><th>Env</th><th>SampleID</th></tr></thead><tbody><tr><td>0</td><td>root:Engineered:Wastewater</td><td>ERR2260442</td></tr><tr><td>1</td><td>root:Engineered:Wastewater</td><td>SRR980322</td></tr><tr><td>2</td><td>root:Engineered:Wastewater</td><td>ERR2985272</td></tr><tr><td>3</td><td>root:Engineered:Wastewater</td><td>ERR2814648</td></tr><tr><td>4</td><td>root:Engineered:Wastewater</td><td>ERR2985275</td></tr></tbody></table>
 
-## Support
-
-Feel free to contact us if you have any question. Thank you for using EXPERT.
-
 ## License
 
 [![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
+
+## Maintainer
+
+|   Name    | Email                 | Organization                                                 |
+| :-------: | --------------------- | ------------------------------------------------------------ |
+| Hui Chong | huichong.me@gmail.com | Research Assistant, School of Life Science and Technology, Huazhong University of Science & Technology |
+| Kang Ning | ningkang@hust.edu.cn  | Professor, School of Life Science and Technology, Huazhong University of Science & Technology |
