@@ -32,7 +32,7 @@ if __name__ == "__main__":
         },
         package_data={
             # change package_name to your package name.
-            "expert": ["./data"]
+            "config": ["./config/config.ini"]
         },
         zip_safe=False,
         classifiers=[
