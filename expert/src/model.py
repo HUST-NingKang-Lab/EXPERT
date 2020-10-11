@@ -147,7 +147,7 @@ class Model(object):
 		return nn
 
 	def build_estimator(self):
-		inputs = Input(shape=self.nn.input_shape)
+		inputs = Input(shape=self.nn.input_shape[1:])
 		logits = self.nn(inputs)
 		contrib = [self.spec_postprocs[i](logits[i]) for i in range(self.n_layers)]
 		self.estimator = tf.keras.Model(inputs=inputs, outputs=contrib)

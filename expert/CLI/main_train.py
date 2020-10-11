@@ -62,7 +62,7 @@ def train(args):
 	X_train = model.encoder(X_train.to_numpy()).numpy().reshape(X_train.shape[0], X_train.shape[1] * phylogeny.shape[1])
 	Xf_stats = {'mean': X_train.mean(), 'std': X_train.std() + 1e-8}
 	np.save(os.path.join(args.tmp, 'mean_f.for.X_train.npy'), Xf_stats['mean'])
-	np.save(os.path.join(args.tmp, 'var_f.for.X_train.npy'), Xf_stats['std'])
+	np.save(os.path.join(args.tmp, 'std_f.for.X_train.npy'), Xf_stats['std'])
 	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
 	Y_train = [y.iloc[:, :-1] for y in Y_train]
 	
