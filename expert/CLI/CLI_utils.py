@@ -12,10 +12,10 @@ def get_CFG_reader():
 
 
 def find_pkg_resource(path):
-	if pkg_resources.resource_exists('expert', path.lstrip('pkg_resources/')):
-		return pkg_resources.resource_filename('expert', path.lstrip('pkg_resources/'))
+	if pkg_resources.resource_exists('expert', path.split(':')[1]):
+		return pkg_resources.resource_filename('expert', path.split(':')[1])
 	else:
-		raise FileNotFoundError('Resource {} not found, please check'.format(path))
+		raise FileNotFoundError('Resource {} not found, please check'.format(path.split(':')[1]))
 
 
 def get_CLI_parser():
