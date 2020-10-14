@@ -4,13 +4,13 @@ import pandas as pd
 import os
 
 
-def select(args):
+def select(cfg, args):
 	matrix_genus = pd.read_hdf(args.i, key='genus')
 	phylo = pd.read_csv(args.phylo, index_col=0)
 	C = args.C
 	print(matrix_genus)
 
-	if args.filter_only:
+	if not args.use_var and not args.use_rf:
 		cols = set(phylo.columns.tolist())
 		mat = phylo.set_index('genus').join(matrix_genus).fillna(0)
 		mat = mat.drop(columns= (cols - {'genus'}) )
@@ -31,7 +31,7 @@ def select(args):
 		print(new_phylo)
 		matrix_genus.loc[new_phylo['genus'], :].to_hdf(args.o, key='genus')
 		new_phylo.to_csv(os.path.join(args.tmp, 'phylogeny_selected_using_rf_importance_C{}.csv'.format(C)))
-	else:
+	elif args.use_var:
 		X = (matrix_genus / matrix_genus.sum()).T
 		variance = X.var(axis=0)
 		selector = VarianceThreshold(threshold=C * variance.mean())
@@ -42,3 +42,5 @@ def select(args):
 		print(new_phylo)
 		matrix_genus.loc[new_phylo['genus'], :].to_hdf(args.o, key='genus')
 		new_phylo.to_csv(os.path.join(args.tmp, 'phylogeny_selected_using_varianceThreshold_C{}.csv'.format(C)))
+	else:
+		raise InterruptedError('Please specify `-use-var` or `-use-rf` or none of them. See GitHub for details.')

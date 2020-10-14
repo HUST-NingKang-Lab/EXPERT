@@ -1,5 +1,5 @@
 import sys
 
 
-def init(args):
+def init(cfg, args):
 	pass

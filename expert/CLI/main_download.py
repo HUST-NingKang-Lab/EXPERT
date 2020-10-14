@@ -8,7 +8,7 @@ from functools import reduce
 import urllib.request
 
 
-def download(args):
+def download(cfg, args):
 	print('Setting proxies...')
 	#proxy_dict = {'http': 'http://127.0.0.1:4780', 'https': 'https://127.0.0.1:4780'} # use customizable options
 	#proxy_dict = {}

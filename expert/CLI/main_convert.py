@@ -1,12 +1,13 @@
 from expert.src.utils import samples_to_countmatrix, merge_countmatrices, scale_abundance
 from expert.src.preprocessing import Transformer
+from expert.CLI.CLI_utils import find_pkg_resource
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
 import os
 
 
-def convert(args):
+def convert(cfg, args):
 	if not os.path.isdir(args.tmp):
 		os.mkdir(args.tmp)
 	print('running...')
@@ -23,10 +24,11 @@ def convert(args):
 	included_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
 	print(matrix.describe(percentiles=[]))
 	matrix = matrix.astype(np.uint64)
-	tm = Transformer(conf_path=args.tmp, phylogeny=args.phylo, db_file=args.db)
+	find = find_pkg_resource
+	tm = Transformer(tmp_path=find(cfg.get('DEFAULT', 'tmp')), phylogeny=find(cfg.get('DEFAULT', 'phylogeny')),
+					 db_file=find(cfg.get('DEFAULT', 'db_file')))
 	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
 	print('Saving results...')
 	matrix_genus.to_hdf(args.o, key='genus', mode='a')
 	print('Phylogeny is saved under `conf` you have specified.')
 	tm.phylogeny.reset_index(drop=True).to_csv(tm.get_conf_savepath('phylogeny_by_transformer.csv'))
-

@@ -68,33 +68,21 @@ def format_sample_info(sample_and_status):
 	return metadata
 
 
-def read_matrices(path, split_idx, end_idx):
-	include_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
-	matrices = np.array([pd.read_hdf(path, key=rank).T for rank in include_ranks])
-	matrices = matrices.swapaxes(0, 1).swapaxes(1, 2)
-	#matrices = np.expand_dims(matrices, axis=3)
-	idx = np.arange(matrices.shape[0])
-	np.random.seed(0)
-	np.random.shuffle(idx)
-	matrices = matrices[idx]
-	return matrices[0:split_idx], matrices[split_idx:end_idx], idx
-
-
 def generate_unk(df):
 	df['Unknown'] = 1 - df.sum(axis=1)
 	return df
 
 
-def read_genus_abu(path, split_idx, end_idx):
+def read_genus_abu(path):
 	genus_abu = pd.read_hdf(path, key='genus').T
 	idx = np.arange(genus_abu.shape[0])
 	np.random.seed(0)
 	np.random.shuffle(idx)
 	genus_abu = genus_abu.iloc[idx, :]
-	return genus_abu.iloc[0:split_idx, :], genus_abu.iloc[split_idx:end_idx, :], idx
+	return genus_abu.iloc, idx
 
 
-def read_labels(path, shuffle_idx, split_idx, end_idx, dmax):
+def read_labels(path, shuffle_idx):
 	# unk should be generated in map op, not here remember to fix
 	labels = [generate_unk(pd.read_hdf(path, key='l'+str(layer))).iloc[shuffle_idx, :] for layer in range(dmax)]
 	return [label[0:split_idx] for label in labels[1:]], \

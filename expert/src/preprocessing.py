@@ -14,8 +14,8 @@ import numpy as np
 
 class Transformer(object):
 
-	def __init__(self, conf_path, phylogeny, db_file):
-		self.conf_path = conf_path
+	def __init__(self, tmp_path, phylogeny, db_file):
+		self.conf_path = tmp_path
 		self.db_tool = NCBITaxa(db_file=db_file)
 		self.phylogeny = phylogeny
 

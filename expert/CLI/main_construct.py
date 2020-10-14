@@ -2,7 +2,7 @@ from livingTree import SuperTree
 from tqdm import tqdm
 
 
-def construct(args):
+def construct(cfg, args):
 	print('Reading microbiome structure...')
 	with open(args.i, 'r') as f:
 		con = f.read().splitlines()
@@ -13,7 +13,7 @@ def construct(args):
 
 	otlg.create_node(identifier='root')
 	otlg.from_paths(paths=paths)
-	if args.show:
+	if not args.silence:
 		otlg.show()
 	print('Done')
 	otlg.to_pickle(args.o)

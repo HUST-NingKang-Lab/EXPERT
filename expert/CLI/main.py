@@ -1,47 +1,48 @@
-import expert.CLI.CLI_utils
+from expert.CLI.CLI_utils import get_CLI_parser, get_CFG_reader
 import sys
 import os
 
 
 def main():
-	parser = expert.CLI.CLI_utils.get_CLI_parser()
-	#parser.print_help()
+	parser = get_CLI_parser()
 	args = parser.parse_args()
+	cfg = get_CFG_reader()
+
 	if args.mode == 'init':
 		from expert.CLI.main_init import init
-		init(args)
+		init(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'download':
 		from expert.CLI.main_download import download
-		download(args)
+		download(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'construct':
 		from expert.CLI.main_construct import construct
-		construct(args)
+		construct(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'map':
 		from expert.CLI.main_map import map
-		map(args)
+		map(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'convert':
 		from expert.CLI.main_convert import convert
-		convert(args)
+		convert(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'select':
 		from expert.CLI.main_select import select
-		select(args)
+		select(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'train':
 		from expert.CLI.main_train import train
-		train(args)
+		train(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'transfer':
 		from expert.CLI.main_transfer import transfer
-		transfer(args)
+		transfer(cfg, args)
 		sys.exit(0)
 	elif args.mode == 'search':
 		from expert.CLI.main_search import search
-		search(args)
+		search(cfg, args)
 		sys.exit(0)
 	else:
 		raise RuntimeError('Please specify correct work mode, see `--help`.')
