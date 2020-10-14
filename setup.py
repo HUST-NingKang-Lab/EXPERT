@@ -32,7 +32,8 @@ if __name__ == "__main__":
         },
         package_data={
             # change package_name to your package name.
-            "config": ["./config/config.ini"]
+            "config": ["./resources/config.ini"],
+            "base_model": ["./resources/base_model"]
         },
         zip_safe=False,
         classifiers=[
