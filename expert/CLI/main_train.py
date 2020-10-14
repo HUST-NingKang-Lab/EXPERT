@@ -55,10 +55,16 @@ def train(cfg, args):
 
 	model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
 	X = model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
-	Xf_stats = {'mean': X.mean(), 'std': X.std() + 1e-8}
+
+
+	'''Xf_stats = {'mean': X.mean(), 'std': X.std() + 1e-8}
 	np.save(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'), Xf_stats['mean'])
-	np.save(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'), Xf_stats['std'])
-	X = (X - Xf_stats['mean']) / Xf_stats['std']
+	np.save(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'), Xf_stats['std'])'''
+
+	X_mean = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
+	X_std = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
+
+	X = (X - X_mean) / X_std
 	Y = [y.iloc[:, :-1] for y in Y]
 
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
