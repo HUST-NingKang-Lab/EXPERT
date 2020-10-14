@@ -15,12 +15,12 @@ def search(cfg, args):
 
 	X = pd.read_hdf(args.i, key='genus').T
 	sampleIDs = X.index
-	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFALUT', 'phylo')), index_col=0)
+	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
 	model = Model(phylogeny=phylogeny, num_features=phylogeny.shape[0], restore_from=args.model)
 	# need to fix here
 	X = model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
-	X_mean = np.load(os.path.join(find_pkg_resource(cfg.get('DEFALUT', 'tmp')), 'mean_f.for.X_train.npy'))
-	X_std = np.load(os.path.join(find_pkg_resource(cfg.get('DEFALUT', 'tmp')), 'std_f.for.X_train.npy'))
+	X_mean = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
+	X_std = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
 	X = (X - X_mean) / X_std
 	model.build_estimator()
 	contrib_arrs = model.estimator.predict(X)
