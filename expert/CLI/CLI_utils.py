@@ -41,6 +41,8 @@ def get_CLI_parser():
 						help='The path to microbiome ontology.')
 	parser.add_argument('-labels', type=str, default=None,
 						help='The path to h5 file (storing labels for the input data).')
+	parser.add_argument('-model', type=str, default=None,
+						help='The path to expert model')
 	parser.add_argument('-gpu', type=int, default=-1,
 						help='-1: CPU only, 0: GPU0, 1: GPU1, ...')
 	parser.add_argument('-val-split', type=float, default=0.1,
@@ -108,8 +110,6 @@ def get_CLI_parser():
 	# ------------------------------------------------------------------------------------------------------------------
 	search = parser.add_argument_group(
 		title='search', description='Search for source environments of your microbial samples using expert model.\n')
-	search.add_argument('-model', type=str, default=None,
-						help='The path to expert model to search against.')
 	search.add_argument('-ofmt', type=str, default=None,
 						help='The output format.')
 	return parser

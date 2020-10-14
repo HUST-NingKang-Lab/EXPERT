@@ -34,7 +34,8 @@ if __name__ == "__main__":
             # change package_name to your package name.
             "config": ["./resources/config.ini"],
             "base_model": ["./resources/base_model"],
-			"phylo":["./resources/phylogeny.csv"]
+			"phylo":["./resources/phylogeny.csv"],
+			"tmp":["./resources/tmp"]
         },
         zip_safe=False,
         classifiers=[
