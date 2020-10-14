@@ -6,8 +6,8 @@ import pkg_resources
 
 def get_CFG_reader():
 	cfg = ConfigParser()
-	assert pkg_resources.resource_exists('resources/config.ini')
-	cfg.read(pkg_resources.resource_filename('resources/config.ini'))
+	assert pkg_resources.resource_exists('expert', 'resources/config.ini')
+	cfg.read(pkg_resources.resource_filename('expert', 'resources/config.ini'))
 	return cfg
 
 
