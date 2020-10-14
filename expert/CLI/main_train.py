@@ -40,7 +40,7 @@ def train(cfg, args):
 	logger = CSVLogger(filename=args.log)
 	lrreducer = ReduceLROnPlateau(monitor='val_loss', patience=reduce_patience, min_lr=1e-5, verbose=5, factor=0.1)
 	stopper = EarlyStopping(monitor='val_loss', patience=stop_patience, verbose=5, restore_best_weights=True)
-	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFALUT', 'phylo')), index_col=0)
+	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
 	pretrain_opt = Adam(lr=pretrain_lr)
 	optimizer = Adam(lr=lr)
 

@@ -24,7 +24,7 @@ def transfer(cfg, args):
 	X, idx = read_genus_abu(args.i)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
 	validation_split = args.val_split
-	phylogeny = pd.read_csv(args.phylo, index_col=0)
+	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
 	do_finetune = cfg.getboolean('transfer', 'do_finetune')
 	new_mapper = cfg.getboolean('transfer', 'new_mapper')
 	reuse_levels = cfg.get('transfer', 'reuse_levels')

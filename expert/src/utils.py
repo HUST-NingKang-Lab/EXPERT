@@ -86,14 +86,13 @@ def read_genus_abu(path):
 	np.random.seed(0)
 	np.random.shuffle(idx)
 	genus_abu = genus_abu.iloc[idx, :]
-	return genus_abu.iloc, idx
+	return genus_abu, idx
 
 
-def read_labels(path, shuffle_idx):
+def read_labels(path, shuffle_idx, dmax):
 	# unk should be generated in map op, not here remember to fix
 	labels = [generate_unk(pd.read_hdf(path, key='l'+str(layer))).iloc[shuffle_idx, :] for layer in range(dmax)]
-	return [label[0:split_idx] for label in labels[1:]], \
-		   [label[split_idx:end_idx] for label in labels[1:]] # except for layer 0 -> root 
+	return [label.iloc[shuffle_idx, :] for label in labels[1:]]
 
 
 def load_otlg(path):
