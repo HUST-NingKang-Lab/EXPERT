@@ -4,3 +4,4 @@ tqdm==4.46.0
 numpy==1.18.5
 scikit-learn==0.23.1
 tensorflow-cpu==2.3.1
+living-tree==0.0.4

@@ -21,7 +21,7 @@ def train(cfg, args):
 	validation_split = args.val_split
 	X, idx = read_genus_abu(args.i)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
-	print('Total correct samples:', sum(X.index == Y.index))
+	print('Total correct samples:', sum(X.index == Y[0].index))
 
 	pretrain_ep = cfg.getint('train', 'pretrain_ep')
 	pretrain_lr = cfg.getfloat('train', 'pretrain_lr')
