@@ -8,6 +8,13 @@ from collections import OrderedDict
 from pandas.io.json._normalize import nested_to_record
 
 
+def get_dmax(path):
+	with pd.HDFStore(path) as hdf:
+		dmax = len(hdf.keys())
+		#hdf.close()
+		return dmax
+
+
 def zero_weight_unk(y, sample_weight):
 	zero_weight_idx = (y['Unknown'] == 1).to_numpy()
 	sample_weight[zero_weight_idx] = 0

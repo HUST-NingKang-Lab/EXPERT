@@ -6,15 +6,12 @@ from expert.CLI.CLI_utils import find_pkg_resource
 
 
 def search(cfg, args):
+	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+	os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 	if args.gpu >= 0:
-		os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-		os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 		gpus = tf.config.list_physical_devices('GPU')
 		for gpu in gpus:
 			tf.config.experimental.set_memory_growth(gpu, True)
-	else:
-		os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-		os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
 	X = pd.read_hdf(args.i, key='genus').T
 	sampleIDs = X.index

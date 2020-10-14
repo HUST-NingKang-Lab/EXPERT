@@ -15,7 +15,7 @@ from expert.src.utils import get_dmax
 
 def transfer(cfg, args):
 	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-	os.environ["CUDA_VISIBLE_DEVICES"] = cfg.get('train', 'gpu')
+	os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 	if args.gpu > -1:
 		gpus = tf.config.list_physical_devices('GPU')
 		for gpu in gpus:
