@@ -61,19 +61,22 @@ expert select -i data/countmatrix_genus.h5 -phylo tmp/phylogeny_by_transformer.c
 Build EXPERT model from scratch and training
 
 ```bash
-expert train -i data/matrix-genus-for-soil-C1e-3.h5 -label data/labels-for-soil.h5 -otlg config/ontology-for-soil.pkl -end-idx -1 -split-idx 10240 -log logs/training-history-for-soil.csv -dmax 6 -o ./models/model-for-soil -cfg ../../config/config.ini -phylo tmp/phylogeny_selected_using_varianceThreshold_C0.001.csv
+expert train -i data/matrix-genus-for-combined-C1e-5.h5 -label data/labels-for-combined.h5 \
+	-otlg config/ontology-for-combined.pkl -log training-history-for-combined.csv -o ./model
 ```
 
 #### Fast adaptation
 
 ```bash
-expert transfer -model models/model-for-combied/ -i data/matrix-genus-for-disease-C1e-5.h5 -labels data/labels-for-disease.h5 -otlg config/ontology-for-disease.pkl -dmax 6 -o models/model-for-disease -cfg ../../config/config.ini  -phylo tmp/phylogeny_selected_using_varianceThreshold_C1e-05.csv -log logs/transfer_history.csv -tmp tmp -split-idx 10240 -end-idx -1
+expert transfer -i dataset/matrix-genus-for-disease-C1e-5.h5 -labels dataset/labels-for-disease.h5 \
+	-otlg dataset/ontology-for-disease.pkl -o model -log transfer_history.csv
 ```
 
 #### Source tracking
 
 ```bash
-expert search -i data/matrix-genus-for-combined-C1e-5.h5 -model models/model-for-combied -cfg ../../config/config.ini -phylo tmp/phylogeny_selected_using_varianceThreshold_C1e-05_pog.csv -tmp tmp -o search_results -gpu -1
+expert search -i data/matrix-genus-for-combined-C1e-5.h5 -o search_results -gpu -1 \
+	-model models/model-for-combied
 ```
 
 Run the program with `-h` option to see a detailed description on work modes & options.
