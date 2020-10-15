@@ -82,23 +82,23 @@ class Transformer(object):
 		del cm_keep
 		gc.collect()
 		
-		if self.phylogeny is not None:
+		'''if self.phylogeny is not None:
 			if verbose > 0:
 				print('Generating matrix for each rank')
 			# join by index
-			matrix_by_rank = OrderedDict( zip(included_ranks, map(fill_in_phylogeny, tqdm(included_ranks)) ))
+			matrix_by_rank = OrderedDict( zip(included_ranks, map(fill_in_phylogeny, tqdm(self.phylogeny.columns)) ))
 			# key -> ranks, index -> taxonomies, column name -> sample ids
 			print(matrix_by_rank['genus'].describe(percentiles=[]))
 			return matrix_by_rank
 		else:
-			if verbose > 0:
-				print('No default phylogeny tree provided, '
-					  'use all lineages data involved automatically.')
-			self._updata_phylo(lineages)
-			matrix_genus = fill_in_phylogeny('genus')
-			print(matrix_genus.describe(percentiles=[]))
-			#print(matrix_genus.sum())
-			return matrix_genus
+		if verbose > 0:
+			print('No default phylogeny tree provided, '
+				  'use all lineages data involved automatically.')'''
+		#self._updata_phylo(lineages)
+		matrix_genus = fill_in_phylogeny('genus')
+		print(matrix_genus.describe(percentiles=[]))
+		#print(matrix_genus.sum())
+		return matrix_genus
 
 	def _track_lineages(self, multi_entries):
 		"""
@@ -170,6 +170,7 @@ class NCBITaxa(object):
 		self.db = self._get_db(in_memory=in_memory)
 
 	def _get_db(self, in_memory=True):
+		print('db file:', self.db_file)
 		source = sqlite3.connect(self.db_file)
 		if in_memory:
 			dest = sqlite3.connect(':memory:')
