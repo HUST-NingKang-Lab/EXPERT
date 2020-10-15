@@ -48,14 +48,6 @@ Convert input data to a count matrix in **genus** level
 expert convert -i countMatrices.txt -in-cm -o dataset/countmatrix_genus.h5
 ```
 
-#### Abundance mapping
-
-map abundance data to phylogenetic tree and get abundance in **genus** level
-
-```shell script
-expert select -i data/countmatrix_genus.h5 -phylo tmp/phylogeny_by_transformer.csv -o data/countmatrix_genus_selected.h5 -C 1e-3 -labels data/labels.h5 -dmax 5 -tmp tmp
-```
-
 #### Ab initio training
 
 Build EXPERT model from scratch and training
