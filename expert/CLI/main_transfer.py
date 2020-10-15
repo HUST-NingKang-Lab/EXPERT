@@ -57,16 +57,16 @@ def transfer(cfg, args):
 	init_model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
 
 	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y.shape[0]))
-	X_train = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
+	X = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
 	Xf_stats = {}
 	Xf_stats['mean'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
 	Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'var_f.for.X_train.npy'))
-	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
-	Y_train = [y.drop(columns=['Unknown']) for y in Y]
+	X = (X - Xf_stats['mean']) / Xf_stats['std']
+	Y = [y.drop(columns=['Unknown']) for y in Y]
 
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
-	model.nn = model.build_graph(input_shape=(X_train.shape[1], ))
+	model.nn = model.build_graph(input_shape=(X.shape[1], ))
 	print('Training using optimizer with lr={}...'.format(lr))
 	model.nn.compile(optimizer=optimizer,
 				  loss=BinaryCrossentropy(label_smoothing=label_smoothing),
@@ -74,7 +74,7 @@ def transfer(cfg, args):
 				  weighted_metrics=[BinaryAccuracy(name='acc'),
 									AUC(num_thresholds=100, name='auROC', multi_label=False),
 									AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
-	model.nn.fit(X_train, Y_train, validation_split=validation_split, batch_size=batch_size, epochs=epochs,
+	model.nn.fit(X, Y, validation_split=validation_split, batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
 	model.nn.summary()
@@ -87,14 +87,14 @@ def transfer(cfg, args):
 			model.spec_inters[layer].trainable = True
 			model.spec_integs[layer].trainable = True
 			model.spec_outputs[layer].trainable = True
-		model.nn = model.build_graph(input_shape=(X_train.shape[1], ))
+		model.nn = model.build_graph(input_shape=(X.shape[1], ))
 		model.nn.compile(optimizer=f_optimizer,
 						 loss=BinaryCrossentropy(label_smoothing=label_smoothing),
 						 loss_weights=loss_weights,
 						 weighted_metrics=[BinaryAccuracy(name='acc'),
 										   AUC(num_thresholds=100, name='auROC', multi_label=False),
 										   AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
-		model.nn.fit(X_train, Y_train, validation_split=validation_split,
+		model.nn.fit(X, Y, validation_split=validation_split,
 				  batch_size=batch_size,
 				  epochs=finetune_eps,
 				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight,

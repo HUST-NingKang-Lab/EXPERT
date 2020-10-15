@@ -37,7 +37,7 @@ expert construct -i tmp/microbiomes.txt -o ontology.pkl
 Mapping their source environments to microbiome ontology
 
 ```shell script
-expert map -to-otlg -otlg tmp/ontology.pkl -i tmp/mapper.csv -o tmp/out/labels.h5 -unk
+expert map -to-otlg -otlg dataset/ontology.pkl -i dataset/mapper.csv -o dataset/labels.h5
 ```
 
 #### Data converting & cleaning
@@ -45,7 +45,7 @@ expert map -to-otlg -otlg tmp/ontology.pkl -i tmp/mapper.csv -o tmp/out/labels.h
 Convert input data to a count matrix in **genus** level
 
 ```shell script
-expert convert -i tmp/sample-list.txt -tmp tmp -o data/countmatrix_genus.h5 -db ~/.etetoolkit/taxa.sqlite
+expert convert -i countMatrices.txt -in-cm -o dataset/countmatrix_genus.h5
 ```
 
 #### Abundance mapping
@@ -61,8 +61,8 @@ expert select -i data/countmatrix_genus.h5 -phylo tmp/phylogeny_by_transformer.c
 Build EXPERT model from scratch and training
 
 ```bash
-expert train -i data/matrix-genus-for-combined-C1e-5.h5 -label data/labels-for-combined.h5 \
-	-otlg config/ontology-for-combined.pkl -log training-history-for-combined.csv -o ./model
+expert train -i dataset/matrix-genus-for-disease-C1e-5.h5 -labels dataset/labels-for-disease.h5 \
+	-otlg dataset/ontology-for-disease.pkl -log training_disease_model.csv -o ./model 
 ```
 
 #### Fast adaptation
@@ -75,8 +75,7 @@ expert transfer -i dataset/matrix-genus-for-disease-C1e-5.h5 -labels dataset/lab
 #### Source tracking
 
 ```bash
-expert search -i data/matrix-genus-for-combined-C1e-5.h5 -o search_results -gpu -1 \
-	-model models/model-for-combied
+expert search -i dataset/matrix-genus-for-disease-C1e-5.h5 -o search_results -gpu -1
 ```
 
 Run the program with `-h` option to see a detailed description on work modes & options.
