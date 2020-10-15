@@ -13,7 +13,7 @@ def map(cfg, args):
 		mapper = pd.read_csv(args.i)
 		otlg = load_otlg(args.otlg)
 		print('Mapping sources to microbiome ontology...')
-		labels_by_level = map_to_ontology(mapper, otlg, args.unk)
+		labels_by_level = map_to_ontology(mapper, otlg, True)
 		print('The ontology contains {} layers.'.format(len(labels_by_level)))
 		print('Saving labels for each ontology layer...')
 		for level, labels in tqdm(labels_by_level.items()):

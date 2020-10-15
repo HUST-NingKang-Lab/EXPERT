@@ -64,9 +64,9 @@ class Model(object):
 		inters_dir = self.__pthjoin(path, 'inters')
 		integs_dir = self.__pthjoin(path, 'integs')
 		outputs_dir = self.__pthjoin(path, 'outputs')
-		inter_dirs = [self.__pthjoin(inters_dir, i) for i in os.listdir(inters_dir)]
-		integ_dirs = [self.__pthjoin(integs_dir, i) for i in os.listdir(integs_dir)]
-		output_dirs = [self.__pthjoin(outputs_dir, i) for i in os.listdir(outputs_dir)]
+		inter_dirs = [self.__pthjoin(inters_dir, i) for i in sorted(os.listdir(inters_dir), key=lambda x: int(x))]
+		integ_dirs = [self.__pthjoin(integs_dir, i) for i in sorted(os.listdir(integs_dir), key=lambda x: int(x))]
+		output_dirs = [self.__pthjoin(outputs_dir, i) for i in sorted(os.listdir(outputs_dir), key=lambda x: int(x))]
 		self.ontology = load_otlg(otlg_dir)
 		self.labels, self.layer_units = parse_otlg(self.ontology)
 		self.base = tf.keras.models.load_model(base_dir)

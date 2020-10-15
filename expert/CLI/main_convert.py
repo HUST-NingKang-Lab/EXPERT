@@ -8,10 +8,10 @@ import os
 
 
 def convert(cfg, args):
-	if not os.path.isdir(args.tmp):
-		os.mkdir(args.tmp)
 	print('running...')
 	print('Reading and concatenating data, this could be slow if you have huge amount of data')
+	db = os.path.join(os.path.expanduser('~'), cfg.get('DEFAULT', 'db_file').lstrip('~/'))
+	print('db file:', db)
 	with open(args.i, 'r') as f:
 		input_files = f.read().splitlines()
 	if args.in_cm:
@@ -25,10 +25,8 @@ def convert(cfg, args):
 	print(matrix.describe(percentiles=[]))
 	matrix = matrix.astype(np.uint64)
 	find = find_pkg_resource
-	tm = Transformer(tmp_path=find(cfg.get('DEFAULT', 'tmp')), phylogeny=find(cfg.get('DEFAULT', 'phylogeny')),
-					 db_file=find(cfg.get('DEFAULT', 'db_file')))
+	tm = Transformer(tmp_path=find(cfg.get('DEFAULT', 'tmp')), phylogeny=pd.read_csv(find(cfg.get('DEFAULT', 'phylo')), index_col=0),
+					 db_file=db)
 	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
 	print('Saving results...')
 	matrix_genus.to_hdf(args.o, key='genus', mode='a')
-	print('Phylogeny is saved under `conf` you have specified.')
-	tm.phylogeny.reset_index(drop=True).to_csv(tm.get_conf_savepath('phylogeny_by_transformer.csv'))

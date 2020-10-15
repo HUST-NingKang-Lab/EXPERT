@@ -52,15 +52,15 @@ def transfer(cfg, args):
 	
 	optimizer = Adam(lr=lr)
 	f_optimizer = Adam(lr=finetune_lr)
-
+	print('shape for X:', X.shape)
 	base_model = Model(phylogeny=phylogeny, num_features=X.shape[1], restore_from=args.model)
 	init_model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
 
-	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y.shape[0]))
+	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y[0].shape[0]))
 	X_train = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
 	Xf_stats = {}
 	Xf_stats['mean'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
-	Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'var_f.for.X_train.npy'))
+	Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
 	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
 	Y_train = [y.drop(columns=['Unknown']) for y in Y]
 
