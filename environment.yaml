@@ -13,7 +13,7 @@ dependencies:
   - ncurses=6.2=he6710b0_1
   - openssl=1.1.1h=h7b6447c_0
   - pip=20.2.3=py38_0
-  - python=3.8.2=hcff3b4d_14
+  - python=3.8.3=hcff3b4d_2
   - readline=8.0=h7b6447c_0
   - setuptools=50.3.0=py38hb0f4dca_1
   - sqlite=3.33.0=h62c20be_0
@@ -28,7 +28,6 @@ dependencies:
     - cachetools==4.1.1
     - chardet==3.0.4
     - ete3==3.1.2
-    - expert==0.1rc0
     - future==0.18.2
     - gast==0.3.3
     - google-auth==1.22.1
