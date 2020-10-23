@@ -57,12 +57,12 @@ def transfer(cfg, args):
 	init_model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
 
 	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y[0].shape[0]))
-	X_train = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
+	X = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
 	Xf_stats = {}
 	Xf_stats['mean'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
 	Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
-	X_train = (X_train - Xf_stats['mean']) / Xf_stats['std']
-	Y_train = [y.drop(columns=['Unknown']) for y in Y]
+	X = (X - Xf_stats['mean']) / Xf_stats['std']
+	Y = [y.drop(columns=['Unknown']) for y in Y]
 
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
