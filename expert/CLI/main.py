@@ -44,6 +44,10 @@ def main():
 		from expert.CLI.main_search import search
 		search(cfg, args)
 		sys.exit(0)
+	elif args.mode == 'evaluate':
+		from expert.CLI.main_evaluate import evaluate
+		evaluate(cfg, args)
+		sys.exit(0)
 	else:
 		raise RuntimeError('Please specify correct work mode, see `--help`.')
 
