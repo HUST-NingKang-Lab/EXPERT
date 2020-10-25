@@ -20,7 +20,7 @@ class Evaluator:
         self.labels_multilayer = [actual_sources_multilayer[layer].drop(columns=['Unknown']).columns.to_series()
                                   for layer in trange(self.n_layers)]
         self.num_thresholds = num_thresholds
-        self.thresholds = (np.arange(num_thresholds+1) / num_thresholds).reshape(num_thresholds+1, 1) # col vector
+        self.thresholds = (np.arange(num_thresholds+2) / num_thresholds).reshape(num_thresholds+2, 1) # col vector
         self.sample_count_threshold = sample_count_threshold
         # skip evaluation of un-labeled data
         self.sample_weight = [zero_weight_unk(y=actual_sources, sample_weight=np.ones(actual_sources.shape[0]))
@@ -43,7 +43,7 @@ class Evaluator:
                 lambda x: (x, self.eval_single_label(predictions[x], actual_sources[x],
                                                      sample_weight, self.thresholds)))(label) for label in labels))
             metrics_layers.append(metrics_layer)
-            sample_count_layer = actual_sources.sum()
+            sample_count_layer = actual_sources.drop(columns='Unknown').sum()
 
             # list all labels to be averaged in order to calculate metrics for a layer
             avg_labels = list(sample_count_layer[sample_count_layer > self.sample_count_threshold].index)
