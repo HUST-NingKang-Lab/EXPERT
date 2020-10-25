@@ -13,11 +13,13 @@ from joblib import delayed
 class Evaluator:
 
     def __init__(self, predictions_multilayer: list, actual_sources_multilayer: list,
-                 num_thresholds, sample_count_threshold, par=None):
+                 num_thresholds, sample_count_threshold, par=None, nafill=0):
         self.predictions_multilayer = predictions_multilayer
         self.actual_sources_multilayer = actual_sources_multilayer
         self.n_layers = len(actual_sources_multilayer)
-        self.labels_multilayer = [actual_sources_multilayer[layer].drop(columns=['Unknown']).columns.to_series()
+        labels_multilayer = [actual_sources_multilayer[layer].drop(columns=['Unknown']).columns.to_series()
+                             for layer in trange(self.n_layers)]
+        self.labels_multilayer = [labels_multilayer[layer][actual_sources_multilayer[layer].drop(columns=['Unknown']).sum() > 0]
                                   for layer in trange(self.n_layers)]
         self.num_thresholds = num_thresholds
         self.thresholds = (np.arange(num_thresholds+2) / num_thresholds).reshape(num_thresholds+2, 1) # col vector
@@ -26,6 +28,7 @@ class Evaluator:
         self.sample_weight = [zero_weight_unk(y=actual_sources, sample_weight=np.ones(actual_sources.shape[0]))
                               for actual_sources in actual_sources_multilayer]
         self.par = par
+        self.nafill = nafill
         '''self.lw = 1
         self.colors = ListedColormap(sns.color_palette("husl", 4))
         colors = self.colors.colors'''
@@ -81,7 +84,7 @@ class Evaluator:
         metrics['FPR'] = metrics['FP'] / (metrics['TN'] + metrics['FP'])
         metrics['Rc'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
         metrics['Pr'] = metrics['TP'] / (metrics['TP'] + metrics['FP'])
-        metrics = metrics.fillna(1)
+        metrics = metrics.fillna(self.nafill)
         metrics['F1'] = (2 * metrics['Pr'] * metrics['Rc'] / (metrics['Pr'] + metrics['Rc']))
         idx = metrics.index
         metrics['ROC-AUC'] = ((metrics.loc[idx[:-1], 'TPR'].to_numpy() + metrics.loc[idx[1:], 'TPR'].to_numpy()) *
