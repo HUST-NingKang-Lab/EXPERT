@@ -13,7 +13,7 @@ from joblib import delayed
 class Evaluator:
 
     def __init__(self, predictions_multilayer: list, actual_sources_multilayer: list,
-                 num_thresholds, sample_count_threshold, par=None, nafill=0):
+                 num_thresholds, sample_count_threshold, par=None, nafill=1):
         self.predictions_multilayer = predictions_multilayer
         self.actual_sources_multilayer = actual_sources_multilayer
         self.n_layers = len(actual_sources_multilayer)
@@ -42,56 +42,55 @@ class Evaluator:
             predictions = self.predictions_multilayer[layer]
             actual_sources = self.actual_sources_multilayer[layer]
             sample_weight = self.sample_weight[layer]
-            metrics_layer = dict(self.par(delayed(\
-                lambda x: (x, self.eval_single_label(predictions[x], actual_sources[x],
-                                                     sample_weight, self.thresholds)))(label) for label in labels))
+            metrics_layer = dict(self.par(delayed(eval_single_label)(predictions[label], actual_sources[label],
+                                                                     sample_weight, self.thresholds, self.nafill)
+                                          for label in labels))
             metrics_layers.append(metrics_layer)
             sample_count_layer = actual_sources.drop(columns='Unknown').sum()
 
             # list all labels to be averaged in order to calculate metrics for a layer
             avg_labels = list(sample_count_layer[sample_count_layer > self.sample_count_threshold].index)
             # list all metrics to be averaged in order to calculate metrics for a layer
-            avg_metrics = ['Acc', 'Sn', 'Sp', 'TPR', 'FPR', 'Rc', 'Pr', 'F1', 'F-max', 'ROC-AUC', 'PR-AUC']
+            avg_metrics = ['Acc', 'Sn', 'Sp', 'TPR', 'FPR', 'Rc', 'Pr', 'F1', 'F-max', 'ROC-AUC']
             avg_metrics_layer = pd.DataFrame(np.concatenate( [np.expand_dims(metrics_layer[label][avg_metrics].to_numpy(), 2)
                                                  for label in avg_labels], axis=2).mean(axis=2), columns=avg_metrics)
             avg_metrics_layer = avg_metrics_layer.round(4)
             avg_metrics_layers.append(avg_metrics_layer)
         return metrics_layers, avg_metrics_layers
 
-    def eval_single_label(self, predictions: pd.Series, actual_sources: pd.Series, sample_weight, thresholds):
-        label = actual_sources.name
-        print('Evaluating biome source:', label)
 
-        # calculate predicted label for samples
-        # samples with contribution above the threshold are considered as POSITIVE, otherwise NEGATIVE
-        # This is a vectorized version using numpy broadcasting
-        pred_source = (predictions.to_numpy().reshape(1, predictions.shape[0]) >= thresholds).astype(np.uint)
-        pred_source = pd.DataFrame(pred_source, columns=predictions.index)
-        metrics = pd.DataFrame()
-        metrics['t'] = thresholds.flatten()
-        actual_sources = actual_sources.astype(np.uint)
+def eval_single_label(predictions: pd.Series, actual_sources: pd.Series, sample_weight, thresholds, nafill):
+    label = actual_sources.name
+    print('Evaluating biome source:', label)
 
-        # calculate TP, TN, FN, FP using sklearn
-        conf_matrix = metrics['t'].apply(lambda T: confusion_matrix(actual_sources,
-                                                                    pred_source.iloc[int(T * self.num_thresholds), :],
-                                                                    sample_weight=sample_weight, labels=[0, 1]).ravel())
-        conf_metrics = pd.DataFrame(conf_matrix.tolist(), columns=['TN', 'FP', 'FN', 'TP']).astype(np.int)
-        metrics = pd.concat( (metrics, conf_metrics), axis=1).set_index('t')
-        metrics['Acc'] = metrics[['TP', 'TN']].sum(axis=1) / metrics.sum(axis=1)
-        metrics['Sn'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
-        metrics['Sp'] = metrics['TN'] / (metrics['TN'] + metrics['FP'])
-        metrics['TPR'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
-        metrics['FPR'] = metrics['FP'] / (metrics['TN'] + metrics['FP'])
-        metrics['Rc'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
-        metrics['Pr'] = metrics['TP'] / (metrics['TP'] + metrics['FP'])
-        metrics = metrics.fillna(self.nafill)
-        metrics['F1'] = (2 * metrics['Pr'] * metrics['Rc'] / (metrics['Pr'] + metrics['Rc']))
-        idx = metrics.index
-        metrics['ROC-AUC'] = ((metrics.loc[idx[:-1], 'TPR'].to_numpy() + metrics.loc[idx[1:], 'TPR'].to_numpy()) *
-                              (metrics.loc[idx[:-1], 'FPR'].to_numpy() - metrics.loc[idx[1:], 'FPR'].to_numpy()) / 2).sum()
-        metrics['PR-AUC'] = ((metrics.loc[idx[:-1], 'Pr'].to_numpy() + metrics.loc[idx[1:], 'Pr'].to_numpy()) *
-                             (metrics.loc[idx[:-1], 'Rc'].to_numpy() - metrics.loc[idx[1:], 'Rc'].to_numpy()) / 2).sum()
-        metrics['F-max'] = metrics['F1'].max()
-        metrics = metrics.round(4)
-        print(metrics)
-        return metrics
+    # calculate predicted label for samples
+    # samples with contribution above the threshold are considered as POSITIVE, otherwise NEGATIVE
+    # This is a vectorized version using numpy broadcasting
+    pred_source = (predictions.to_numpy().reshape(1, predictions.shape[0]) >= thresholds).astype(np.uint)
+    pred_source = pd.DataFrame(pred_source, columns=predictions.index)
+    actual_sources = actual_sources.astype(np.uint)
+    metrics = pd.DataFrame()
+    metrics['t'] = thresholds.flatten()
+    num_thresholds = metrics['t'].shape[0] - 2
+    # calculate TP, TN, FN, FP using sklearn
+    conf_matrix = metrics['t'].apply(lambda T: confusion_matrix(actual_sources, pred_source.iloc[int(T * num_thresholds), :], sample_weight=sample_weight, labels=[0, 1]).ravel())
+    conf_metrics = pd.DataFrame(conf_matrix.tolist(), columns=['TN', 'FP', 'FN', 'TP']).astype(np.int)
+    metrics = pd.concat( (metrics, conf_metrics), axis=1).set_index('t')
+    metrics['Acc'] = metrics[['TP', 'TN']].sum(axis=1) / metrics.sum(axis=1)
+    metrics['Sn'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
+    metrics['Sp'] = metrics['TN'] / (metrics['TN'] + metrics['FP'])
+    metrics['TPR'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
+    metrics['FPR'] = metrics['FP'] / (metrics['TN'] + metrics['FP'])
+    metrics['Rc'] = metrics['TP'] / (metrics['TP'] + metrics['FN'])
+    metrics['Pr'] = metrics['TP'] / (metrics['TP'] + metrics['FP'])
+    metrics = metrics.fillna(nafill)
+    metrics['F1'] = (2 * metrics['Pr'] * metrics['Rc'] / (metrics['Pr'] + metrics['Rc']))
+    idx = metrics.index
+    metrics['ROC-AUC'] = ((metrics.loc[idx[:-1], 'TPR'].to_numpy() + metrics.loc[idx[1:], 'TPR'].to_numpy()) *
+                          (metrics.loc[idx[:-1], 'FPR'].to_numpy() - metrics.loc[idx[1:], 'FPR'].to_numpy()) / 2).sum()
+    '''metrics['PR-AUC'] = ((metrics.loc[idx[:-1], 'Pr'].to_numpy() + metrics.loc[idx[1:], 'Pr'].to_numpy()) *
+                         (metrics.loc[idx[:-1], 'Rc'].to_numpy() - metrics.loc[idx[1:], 'Rc'].to_numpy()) / 2).sum()'''
+    metrics['F-max'] = metrics['F1'].max()
+    metrics = metrics.round(4)
+    print(metrics)
+    return label, metrics

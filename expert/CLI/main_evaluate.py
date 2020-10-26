@@ -17,7 +17,7 @@ def evaluate(cfg, args):
                for layer in range(get_dmax(args.labels))]
     if 'root' in sources[0].columns:
         sources = sources[1:]
-    par = Parallel(n_jobs=args.p, prefer='threads')
+    par = Parallel(n_jobs=args.p, backend='loky')
     print('Running evaluation...')
     evaltr = Evaluator(predictions_multilayer=predictions, actual_sources_multilayer=sources,
                        num_thresholds=args.T, sample_count_threshold=100, par=par)
