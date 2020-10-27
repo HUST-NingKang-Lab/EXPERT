@@ -20,7 +20,7 @@ def evaluate(cfg, args):
         sources = sources[1:]
         contains_root = 1
 
-    print('Reordering labels and prediction result for samples')
+    print('Reordering labels and prediction result')
     IDs = list(set(predictions[0].index.to_list()).intersection(sources[0].index.to_list()))
 
     sources = [source_singlelayer.loc[IDs, :] for source_singlelayer in sources]
