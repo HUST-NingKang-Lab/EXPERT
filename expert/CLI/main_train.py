@@ -21,6 +21,12 @@ def train(cfg, args):
 	validation_split = args.val_split
 	X, idx = read_genus_abu(args.i)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
+
+	IDs = list(set(X[0].index.to_list()).intersection(Y[0].index.to_list()))
+
+	X = X.loc[IDs, :]
+	Y = [Y[layer].loc[IDs, :] for layer in range(get_dmax(args.labels))]
+
 	print('Total correct samples:', sum(X.index == Y[0].index))
 
 	pretrain_ep = cfg.getint('train', 'pretrain_ep')

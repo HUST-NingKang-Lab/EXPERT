@@ -15,8 +15,14 @@ def evaluate(cfg, args):
                    for layer in layers]
     sources = [pd.read_hdf(args.labels, key='l'+str(layer))#.iloc[idx, :]
                for layer in range(get_dmax(args.labels))]
+
     if 'root' in sources[0].columns:
         sources = sources[1:]
+    IDs = list(set(predictions[0].index.to_list()).intersection(sources[0].index.to_list()))
+
+    sources = [sources[layer].loc[IDs, :] for layer in range(get_dmax(args.labels))]
+    predictions = [predictions[layer].loc[IDs, :] for layer in range(len(layers))]
+
     par = Parallel(n_jobs=args.p, backend='loky')
     print('Running evaluation...')
     evaltr = Evaluator(predictions_multilayer=predictions, actual_sources_multilayer=sources,
