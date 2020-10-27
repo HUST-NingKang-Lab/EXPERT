@@ -18,10 +18,14 @@ def evaluate(cfg, args):
 
     if 'root' in sources[0].columns:
         sources = sources[1:]
+        contains_root = 1
+
+    print('Reordering labels and prediction result for samples')
     IDs = list(set(predictions[0].index.to_list()).intersection(sources[0].index.to_list()))
 
-    sources = [sources[layer].loc[IDs, :] for layer in range(get_dmax(args.labels))]
-    predictions = [predictions[layer].loc[IDs, :] for layer in range(len(layers))]
+    sources = [source_singlelayer.loc[IDs, :] for source_singlelayer in sources]
+    predictions = [predictions_singlelayer.loc[IDs, :] for predictions_singlelayer in predictions]
+    print('Reordering labels and prediction result for samples')
 
     par = Parallel(n_jobs=args.p, backend='loky')
     print('Running evaluation...')

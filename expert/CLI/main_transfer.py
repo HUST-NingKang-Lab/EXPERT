@@ -28,7 +28,7 @@ def transfer(cfg, args):
 	IDs = list(set(X[0].index.to_list()).intersection(Y[0].index.to_list()))
 
 	X = X.loc[IDs, :]
-	Y = [Y[layer].loc[IDs, :] for layer in range(get_dmax(args.labels))]
+	Y = [y.loc[IDs, :] for y in Y]
 
 	validation_split = args.val_split
 	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
