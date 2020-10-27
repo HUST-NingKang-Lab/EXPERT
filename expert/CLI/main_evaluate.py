@@ -36,11 +36,11 @@ def evaluate(cfg, args):
     if not os.path.isdir(args.o):
         os.mkdir(args.o)
     for layer in trange(len(layers)):
-        if not os.path.isdir(os.path.join(args.o, 'layer-' + str(layer))):
-            os.mkdir(os.path.join(args.o, 'layer-' + str(layer)))
+        if not os.path.isdir(os.path.join(args.o, 'layer-' + str(layer+2))):
+            os.mkdir(os.path.join(args.o, 'layer-' + str(layer+2)))
         metrics_layer = metrics_layers[layer]
         avg_metrics_layer = avg_metrics_layers[layer]
-        avg_metrics_layer.to_csv(os.path.join(args.o, 'layer-' + str(layer) + '.csv' ))
+        avg_metrics_layer.to_csv(os.path.join(args.o, 'layer-' + str(layer+2) + '.csv' ))
         for label, metrics in metrics_layer.items():
-            metrics.to_csv(os.path.join(args.o, 'layer-' + str(layer), label + '.csv'))
+            metrics.to_csv(os.path.join(args.o, 'layer-' + str(layer+2), label + '.csv'))
 

@@ -135,7 +135,7 @@ class Transformer(object):
 		#entries_df = entries_df.applymap(lambda x: x.replace('_', ' '))
 
 		isin_db = entries_df.apply(self.db_tool.entries_in_db, axis=1)
-		isin_db.to_csv('isin_db.csv')
+		# isin_db.to_csv('isin_db.csv')
 		isfarthest_indb = pd.DataFrame(isin_db.apply(lambda x: x.index == x[x].index[-1], axis=1).values.tolist(),
 									   index=entries_df.index,
 									   columns=entries_df.columns)
