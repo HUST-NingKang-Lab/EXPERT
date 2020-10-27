@@ -105,7 +105,7 @@ def get_CLI_parser():
 		title='evaluate', description='Evaluate the expert model, properly labeled data must be provided.\n'
 									  'use `-model` option to indicate a customized model.\n'
 									  'Input: search results, output: evaluation report')
-	evaluate.add_argument('-T', type=int, default=200,
+	evaluate.add_argument('-T', type=int, default=100,
 						  help='The number of thresholds for evaluation.')
 
 	# ------------------------------------------------------------------------------------------------------------------
