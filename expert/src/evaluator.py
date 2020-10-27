@@ -13,7 +13,7 @@ from joblib import delayed
 class Evaluator:
 
     def __init__(self, predictions_multilayer: list, actual_sources_multilayer: list,
-                 num_thresholds, sample_count_threshold, par=None, nafill=1):
+                 num_thresholds, sample_count_threshold, par=None, nafill=0):
         self.predictions_multilayer = predictions_multilayer
         self.actual_sources_multilayer = actual_sources_multilayer
         self.n_layers = len(actual_sources_multilayer)
