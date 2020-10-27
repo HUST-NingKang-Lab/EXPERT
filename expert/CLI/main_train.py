@@ -22,7 +22,7 @@ def train(cfg, args):
 	X, idx = read_genus_abu(args.i)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
 
-	IDs = list(set(X[0].index.to_list()).intersection(Y[0].index.to_list()))
+	IDs = list(set(X.index.to_list()).intersection(Y[0].index.to_list()))
 
 	X = X.loc[IDs, :]
 	Y = [y.loc[IDs, :] for y in Y]
