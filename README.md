@@ -121,6 +121,7 @@ expert search -i countMatrix.h5 -o searchResult -gpu -1
 - Output: search result (multi-layer ).
 
 ```
+searchResult
 ├── layer-2.csv
 ├── layer-3.csv
 ├── layer-4.csv
@@ -148,6 +149,7 @@ expert evaluate -i searchResultFolder -labels labels.h5 -T 100 -o EvaluationRepo
 - Output: label-based evaluation report.
 
 ```
+EvaluationReport
 ├── layer-2
 │   └── root:Host-associated.csv
 ├── layer-2.csv
