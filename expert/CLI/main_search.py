@@ -25,7 +25,7 @@ def search(cfg, args):
 	model.build_estimator()
 	contrib_arrs = model.estimator.predict(X)
 	labels = model.labels
-	contrib_layers = {'layer-'+str(i+1): pd.DataFrame(contrib_arrs[i], index=sampleIDs, columns=labels[i+1] + ['Unknown'])
+	contrib_layers = {'layer-'+str(i+2): pd.DataFrame(contrib_arrs[i], index=sampleIDs, columns=labels[i+1] + ['Unknown'])
 					  for i, key in enumerate(labels.keys())}
 	for layer, contrib in contrib_layers.items():
 		if not os.path.isdir(args.o):

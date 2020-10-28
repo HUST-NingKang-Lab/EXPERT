@@ -104,8 +104,9 @@ def get_CLI_parser():
 	evaluate = parser.add_argument_group(
 		title='evaluate', description='Evaluate the expert model, properly labeled data must be provided.\n'
 									  'use `-model` option to indicate a customized model.\n'
-									  'Input: samples, in pandas h5 format, output: evaluation report '
-									  '(in ".csv" format)')
+									  'Input: search results, output: evaluation report')
+	evaluate.add_argument('-T', type=int, default=100,
+						  help='The number of thresholds for evaluation.')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	search = parser.add_argument_group(

@@ -19,7 +19,7 @@ def map(cfg, args):
 		for level, labels in tqdm(labels_by_level.items()):
 			# consider save lmax for using
 			print(labels.sum())
-			labels.to_csv(args.o+'.csv')
+			#labels.to_csv(args.o+'.csv')
 			labels.to_hdf(args.o, key='l'+str(level), mode='a')
 	else:
 		raise ValueError('Please given one of the [from_dir, to_otlg]')

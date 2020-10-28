@@ -21,7 +21,14 @@ def train(cfg, args):
 	validation_split = args.val_split
 	X, idx = read_genus_abu(args.i)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
-	print('Total correct samples:', sum(X.index == Y[0].index))
+
+	print('Reordering labels and samples...')
+	IDs = list(set(X.index.to_list()).intersection(Y[0].index.to_list()))
+
+	X = X.loc[IDs, :]
+	Y = [y.loc[IDs, :] for y in Y]
+
+	print('Total matched samples:', sum(X.index == Y[0].index))
 
 	pretrain_ep = cfg.getint('train', 'pretrain_ep')
 	pretrain_lr = cfg.getfloat('train', 'pretrain_lr')
