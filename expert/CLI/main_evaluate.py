@@ -30,7 +30,7 @@ def evaluate(cfg, args):
     par = Parallel(n_jobs=args.p, backend='loky')
     print('Running evaluation...')
     evaltr = Evaluator(predictions_multilayer=predictions, actual_sources_multilayer=sources,
-                       num_thresholds=args.T, sample_count_threshold=100, par=par)
+                       num_thresholds=args.T, sample_count_threshold=args.S, par=par)
     metrics_layers, avg_metrics_layers = evaltr.eval()
     print('Saving evaluation results...')
     if not os.path.isdir(args.o):
