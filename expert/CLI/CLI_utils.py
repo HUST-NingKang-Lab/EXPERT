@@ -107,6 +107,8 @@ def get_CLI_parser():
 									  'Input: search results, output: evaluation report')
 	evaluate.add_argument('-T', type=int, default=100,
 						  help='The number of thresholds for evaluation.')
+	evaluate.add_argument('-S', type=int, default=10,
+						  help='The threshold when averaging metrics of each biome source with in each ontology layer')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	search = parser.add_argument_group(
