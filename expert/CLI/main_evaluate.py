@@ -8,7 +8,7 @@ from joblib import Parallel
 
 
 def evaluate(cfg, args):
-    layers = [os.path.join(args.i, i) for i in sorted(os.listdir(args.i), key=lambda x: int(x.split('.')[0].split('-')[1]))]
+    layers = [os.path.join(args.input, i) for i in sorted(os.listdir(args.i), key=lambda x: int(x.split('.')[0].split('-')[1]))]
     np.random.seed(0)
     #idx = np.random.choice(np.arange(100000), 10000)
     predictions = [pd.read_csv(layer, index_col=0)#.iloc[idx, :]
@@ -27,20 +27,29 @@ def evaluate(cfg, args):
     predictions = [predictions_singlelayer.loc[IDs, :] for predictions_singlelayer in predictions]
     print('Reordering labels and prediction result for samples')
 
-    par = Parallel(n_jobs=args.p, backend='loky')
+    par = Parallel(n_jobs=args.processors, backend='loky')
     print('Running evaluation...')
     evaltr = Evaluator(predictions_multilayer=predictions, actual_sources_multilayer=sources,
                        num_thresholds=args.T, sample_count_threshold=args.S, par=par)
-    metrics_layers, avg_metrics_layers = evaltr.eval()
+    metrics_layers, avg_metrics_layers, overall_metrics = evaltr.eval()
     print('Saving evaluation results...')
-    if not os.path.isdir(args.o):
-        os.mkdir(args.o)
+    if not os.path.isdir(args.output):
+        os.mkdir(args.output)
+    overall_metrics.to_csv(os.path.join(args.output, 'overall.csv')) # debug
     for layer in trange(len(layers)):
-        if not os.path.isdir(os.path.join(args.o, 'layer-' + str(layer+2))):
-            os.mkdir(os.path.join(args.o, 'layer-' + str(layer+2)))
+        if not os.path.isdir(os.path.join(args.output, 'layer-' + str(layer+2))):
+            os.mkdir(os.path.join(args.output, 'layer-' + str(layer+2)))
         metrics_layer = metrics_layers[layer]
         avg_metrics_layer = avg_metrics_layers[layer]
-        avg_metrics_layer.to_csv(os.path.join(args.o, 'layer-' + str(layer+2) + '.csv' ))
+        avg_metrics_layer.to_csv(os.path.join(args.output, 'layer-' + str(layer+2) + '.csv' ))
         for label, metrics in metrics_layer.items():
-            metrics.to_csv(os.path.join(args.o, 'layer-' + str(layer+2), label + '.csv'))
+            metrics.to_csv(os.path.join(args.output, 'layer-' + str(layer+2), label + '.csv'))
+
+    '''
+    pd.concat(map(lambda x: pd.read_csv(x, index_col=0).loc[0.00, ['ROC-AUC', 'F-max']].rename(os.path.split(x)[1].split('.')[0]), all_metrics), axis=1).T
+    paths = ['EvalResult_{}'.format(i) for i in range(5)]
+    metrics = [path2metrics(path) for path in paths]
+    metrics = pd.concat(metrics, axis=1)
+    metrics.T.groupby(by=metrics.T.index).mean().T.rename(columns=lambda x: '(Avg.) '+x).round(4)
+    '''
 

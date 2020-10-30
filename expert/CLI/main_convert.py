@@ -12,7 +12,7 @@ def convert(cfg, args):
 	print('Reading and concatenating data, this could be slow if you have huge amount of data')
 	db = os.path.join(os.path.expanduser('~'), cfg.get('DEFAULT', 'db_file').lstrip('~/'))
 	print('db file:', db)
-	with open(args.i, 'r') as f:
+	with open(args.input, 'r') as f:
 		input_files = f.read().splitlines()
 	if args.in_cm:
 		sub_matrices = map(lambda x: pd.read_csv(x, sep='\t', index_col=0), tqdm(input_files))
@@ -29,4 +29,4 @@ def convert(cfg, args):
 					 db_file=db)
 	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
 	print('Saving results...')
-	matrix_genus.to_hdf(args.o, key='genus', mode='a')
+	matrix_genus.to_hdf(args.output, key='genus', mode='a')
