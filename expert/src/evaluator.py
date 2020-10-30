@@ -8,6 +8,7 @@ from sklearn.metrics import confusion_matrix, auc
 from expert.src.utils import zero_weight_unk
 from pprint import pprint
 from joblib import delayed
+from functools import reduce
 
 
 class Evaluator:
@@ -56,7 +57,9 @@ class Evaluator:
                                                  for label in avg_labels], axis=2).mean(axis=2), columns=avg_metrics)
             avg_metrics_layer = avg_metrics_layer.round(4)
             avg_metrics_layers.append(avg_metrics_layer)
-        return metrics_layers, avg_metrics_layers
+        all_metrics = reduce(lambda x, y: {**x, **y}, metrics_layers)
+        overall_metrics = pd.concat(map(lambda label, metrics: metrics.loc[0.00, ['ROC-AUC', 'F-max']].rename(label), all_metrics.items()), axis=1).T
+        return metrics_layers, avg_metrics_layers, overall_metrics
 
 
 def eval_single_label(predictions: pd.Series, actual_sources: pd.Series, sample_weight, thresholds, nafill):

@@ -22,7 +22,7 @@ def transfer(cfg, args):
 		for gpu in gpus:
 			tf.config.experimental.set_memory_growth(gpu, True)
 
-	X, idx = read_genus_abu(args.i)
+	X, idx = read_genus_abu(args.input)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
 
 	print('Reordering labels and samples...')
@@ -68,8 +68,12 @@ def transfer(cfg, args):
 	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y[0].shape[0]))
 	X = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
 	Xf_stats = {}
-	Xf_stats['mean'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
-	Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
+	if args.self_normalize:
+		Xf_stats['mean'] = X.mean()
+		Xf_stats['std'] = X.std()
+	else:
+		Xf_stats['mean'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
+		Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
 	X = (X - Xf_stats['mean']) / Xf_stats['std']
 	Y = [y.drop(columns=['Unknown']) for y in Y]
 
@@ -109,7 +113,7 @@ def transfer(cfg, args):
 				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight,
 				  callbacks=[ft_logger, stopper])
 		
-		model.save_blocks(args.o)
+		model.save_blocks(args.output)
 
 		'''sample_weight_test = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_test)]	
 		X_test = init_model.encoder(X_test.to_numpy()).numpy().reshape(X_test.shape[0], X_test.shape[1] * phylogeny.shape[1])

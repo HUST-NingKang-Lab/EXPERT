@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 def construct(cfg, args):
 	print('Reading microbiome structure...')
-	with open(args.i, 'r') as f:
+	with open(args.input, 'r') as f:
 		con = f.read().splitlines()
 	print('Generating Ontology...')
 	otlg = SuperTree()
@@ -16,4 +16,4 @@ def construct(cfg, args):
 	if not args.silence:
 		otlg.show()
 	print('Done')
-	otlg.to_pickle(args.o)
+	otlg.to_pickle(args.output)

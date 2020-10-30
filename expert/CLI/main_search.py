@@ -13,7 +13,7 @@ def search(cfg, args):
 		for gpu in gpus:
 			tf.config.experimental.set_memory_growth(gpu, True)
 
-	X = pd.read_hdf(args.i, key='genus').T
+	X = pd.read_hdf(args.input, key='genus').T
 	sampleIDs = X.index
 	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
 	model = Model(phylogeny=phylogeny, num_features=phylogeny.shape[0], restore_from=args.model)
@@ -28,6 +28,6 @@ def search(cfg, args):
 	contrib_layers = {'layer-'+str(i+2): pd.DataFrame(contrib_arrs[i], index=sampleIDs, columns=labels[i+1] + ['Unknown'])
 					  for i, key in enumerate(labels.keys())}
 	for layer, contrib in contrib_layers.items():
-		if not os.path.isdir(args.o):
-			os.mkdir(args.o)
-		contrib.to_csv(os.path.join(args.o, layer+'.csv'))
+		if not os.path.isdir(args.output):
+			os.mkdir(args.output)
+		contrib.to_csv(os.path.join(args.output, layer+'.csv'))
