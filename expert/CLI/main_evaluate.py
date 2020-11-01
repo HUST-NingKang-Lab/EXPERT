@@ -8,7 +8,7 @@ from joblib import Parallel
 
 
 def evaluate(cfg, args):
-    layers = [os.path.join(args.input, i) for i in sorted(os.listdir(args.i), key=lambda x: int(x.split('.')[0].split('-')[1]))]
+    layers = [os.path.join(args.input, i) for i in sorted(os.listdir(args.input), key=lambda x: int(x.split('.')[0].split('-')[1]))]
     np.random.seed(0)
     #idx = np.random.choice(np.arange(100000), 10000)
     predictions = [pd.read_csv(layer, index_col=0)#.iloc[idx, :]
