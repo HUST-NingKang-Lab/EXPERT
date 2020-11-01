@@ -49,6 +49,9 @@ def get_CLI_parser():
 					   help='The fraction of validation samples.')
 	parser.add_argument('--self-normalize', action='store_true',
 						help='Normalize input samples using mean and std calculated from itself')
+	'''parser.add_argument('--stats', type=str, default=find_pkg_resource('resources/tmp'),
+						help='Path to store and read std and mean statistics of the input data. '
+							 'Only works when `--self-normalize` is used.')'''
 
 	# ------------------------------------------------------------------------------------------------------------------
 	construct = parser.add_argument_group(
@@ -93,7 +96,7 @@ def get_CLI_parser():
 		title='train', description='Train expert model, the microbiome ontology and properly labeled data '
 								   'must be provided.\n'
 								   'Input: samples, in pandas h5 format, output: expert model')
-	train.add_argument('--log', type=str, default=None,
+	train.add_argument('--log', type=str, default='TrainingHistory.csv',
 					   help='The path to store training history of expert model.')
 
 	# ------------------------------------------------------------------------------------------------------------------

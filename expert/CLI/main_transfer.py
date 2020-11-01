@@ -85,8 +85,7 @@ def transfer(cfg, args):
 				  loss=BinaryCrossentropy(label_smoothing=label_smoothing),
 				  loss_weights=loss_weights, 
 				  weighted_metrics=[BinaryAccuracy(name='acc'),
-									AUC(num_thresholds=100, name='auROC', multi_label=False),
-									AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
+									AUC(num_thresholds=100, name='auROC', multi_label=False)])
 	model.nn.fit(X, Y, validation_split=validation_split, batch_size=batch_size, epochs=epochs,
 			  sample_weight=sample_weight,
 			  callbacks=[logger, lrreducer, stopper])
@@ -105,8 +104,7 @@ def transfer(cfg, args):
 						 loss=BinaryCrossentropy(label_smoothing=label_smoothing),
 						 loss_weights=loss_weights,
 						 weighted_metrics=[BinaryAccuracy(name='acc'),
-										   AUC(num_thresholds=100, name='auROC', multi_label=False),
-										   AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
+										   AUC(num_thresholds=100, name='auROC', multi_label=False)])
 		model.nn.fit(X, Y, validation_split=validation_split,
 				  batch_size=batch_size,
 				  epochs=finetune_eps,

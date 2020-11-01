@@ -28,5 +28,8 @@ def convert(cfg, args):
 	tm = Transformer(tmp_path=find(cfg.get('DEFAULT', 'tmp')), phylogeny=pd.read_csv(find(cfg.get('DEFAULT', 'phylo')), index_col=0),
 					 db_file=db)
 	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
+	print('Normalizing results...')
+	matrix_genus = matrix_genus / matrix_genus.sum()
+	print(matrix.describe(percentiles=[]))
 	print('Saving results...')
 	matrix_genus.to_hdf(args.output, key='genus', mode='a')
