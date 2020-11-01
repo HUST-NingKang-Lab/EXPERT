@@ -58,7 +58,7 @@ class Evaluator:
             avg_metrics_layer = avg_metrics_layer.round(4)
             avg_metrics_layers.append(avg_metrics_layer)
         all_metrics = reduce(lambda x, y: {**x, **y}, metrics_layers)
-        overall_metrics = pd.concat(map(lambda label, metrics: metrics.loc[0.00, ['ROC-AUC', 'F-max']].rename(label), all_metrics.items()), axis=1).T
+        overall_metrics = pd.concat(map(lambda label_metrics: label_metrics[1].loc[0.00, ['ROC-AUC', 'F-max']].rename(label_metrics[0]), all_metrics.items()), axis=1).T
         return metrics_layers, avg_metrics_layers, overall_metrics
 
 
