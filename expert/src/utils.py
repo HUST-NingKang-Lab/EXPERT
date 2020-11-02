@@ -22,12 +22,10 @@ def zero_weight_unk(y, sample_weight):
 	return sample_weight
 
 
-def transfer_weights(base_model, init_model, new_mapper, reuse_levels):
+def transfer_weights(base_model, init_model, reuse_levels):
+	init_model.statistics = base_model.statistics
 	init_model.base = base_model.base
 	init_model.base.trainable = False
-	'''if not new_mapper:
-		init_model.feature_mapper = base_model.feature_mapper
-		init_model.feature_mapper.trainable = False'''
 	for layer, reuse_level in enumerate(reuse_levels):
 		use_level = int(reuse_level)
 		if use_level == 0:

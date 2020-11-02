@@ -14,8 +14,7 @@ import numpy as np
 
 class Transformer(object):
 
-	def __init__(self, tmp_path, phylogeny, db_file):
-		self.conf_path = tmp_path
+	def __init__(self, phylogeny, db_file):
 		self.db_tool = NCBITaxa(db_file=db_file)
 		self.phylogeny = phylogeny
 
@@ -144,9 +143,6 @@ class Transformer(object):
 			apply(str_sum, axis=1).values.tolist(), index=entries_df.index)
 
 		return farthest_entries
-
-	def get_conf_savepath(self, file_name):
-		return os.path.join(self.conf_path, file_name)
 
 	def _updata_phylo(self, lineage_names):
 		lineage_names = lineage_names[['superkingdom','phylum','class','order','family','genus']]

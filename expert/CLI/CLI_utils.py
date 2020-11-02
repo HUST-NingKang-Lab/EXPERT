@@ -47,11 +47,8 @@ def get_CLI_parser():
 						help='-1: CPU only, 0: GPU0, 1: GPU1, ...')
 	parser.add_argument('-s', '--val-split', type=float, default=0.1,
 					   help='The fraction of validation samples.')
-	parser.add_argument('--self-normalize', action='store_true',
-						help='Normalize input samples using mean and std calculated from itself')
-	'''parser.add_argument('--stats', type=str, default=find_pkg_resource('resources/tmp'),
-						help='Path to store and read std and mean statistics of the input data. '
-							 'Only works when `--self-normalize` is used.')'''
+	parser.add_argument('-H', '--log', type=str, default=None,
+					   help='The path to store training history of expert model.')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	construct = parser.add_argument_group(
@@ -77,6 +74,8 @@ def get_CLI_parser():
 									 'Input: the input data, Output: RRDM at Genus level')
 	convert.add_argument('--in-cm', action='store_true',
 						help="Whether to use the countmatrix as the input format.")
+	convert.add_argument('--db_file', type=str, default=os.path.join(os.path.expanduser('~'), '.etetoolkit/taxa.sqlite'),
+						 help='Local NCBI taxonomy database file, must be in sqlite format.')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	select = parser.add_argument_group(
@@ -96,8 +95,6 @@ def get_CLI_parser():
 		title='train', description='Train expert model, the microbiome ontology and properly labeled data '
 								   'must be provided.\n'
 								   'Input: samples, in pandas h5 format, output: expert model')
-	train.add_argument('--log', type=str, default='TrainingHistory.csv',
-					   help='The path to store training history of expert model.')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	transfer = parser.add_argument_group(
@@ -105,6 +102,8 @@ def get_CLI_parser():
 									  'and properly labeled data must be provided.\n'
 									  'use `-model` option to indicate a customized base model.\n'
 									  'Input: samples, in pandas h5 format, output: expert model')
+	transfer.add_argument('--update-statistics', action='store_true',
+						help='Normalize input samples using mean and std calculated from itself')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	evaluate = parser.add_argument_group(
