@@ -78,7 +78,7 @@ expert map --to-otlg --otlg ontology.pkl --input mapper.csv --output labels.h5
 Convert input data to a count matrix in **genus** level.
 
 ```shell script
-expert convert -i countMatrices.txt --in-cm -o countMatrix.h5
+expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
 # Also equivalent to
 expert convert --input countMatrices.txt --output countMatrix.h5 --in-cm 
 ```
