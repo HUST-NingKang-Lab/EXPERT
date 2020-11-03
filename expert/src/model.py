@@ -23,7 +23,7 @@ class Model(object):
 			self.ontology = ontology
 			self.labels, self.layer_units = parse_otlg(self.ontology)
 			self.n_layers = len(self.layer_units)
-			self.statistics = pd.DataFrame()
+			self.statistics = pd.DataFrame(index=range(phylogeny.shape[0] * phylogeny.shape[1]), columns=['mean', 'std'])
 			self.base = self.init_base_block(num_features=num_features)
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer+2), n_units=n_units)
 								for layer, n_units in enumerate(self.layer_units)]
@@ -153,11 +153,14 @@ class Model(object):
 		self.estimator = tf.keras.Model(inputs=inputs, outputs=contrib)
 
 	def update_statistics(self, mean, std):
-		self.statistics['mean'] = mean
-		self.statistics['std'] = std
+		stats = self.statistics.copy()
+		stats.loc[:, 'mean'] = mean.tolist()
+		stats.loc[:, 'std'] = std.tolist()
+		self.statistics = stats
+		print(self.statistics)
 
 	def standardize(self, X):
-		return (X - self.statistics['mean']) / (self.statistics['std'] + 1e-8)
+		return pd.DataFrame(X).sub(self.statistics['mean'], axis=1).div(self.statistics['std'] + 1e-8, axis=1)
 
 	def _init_bn_layer(self):
 		return BatchNormalization(momentum=0.9, scale=False)

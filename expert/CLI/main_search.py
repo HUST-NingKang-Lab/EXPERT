@@ -17,7 +17,7 @@ def search(cfg, args):
 	# Read data
 	X = pd.read_hdf(args.input, key='genus').T
 	sampleIDs = X.index
-	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
+	phylogeny = pd.read_csv(find_pkg_resource('resources/phylogeny.csv'), index_col=0)
 
 	# Build EXPERT model
 	model = Model(phylogeny=phylogeny, num_features=phylogeny.shape[0], restore_from=args.model)

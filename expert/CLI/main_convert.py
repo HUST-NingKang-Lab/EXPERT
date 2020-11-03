@@ -9,7 +9,7 @@ import numpy as np
 def convert(cfg, args):
 	print('running...')
 	print('Reading and concatenating data, this could be slow if you have huge amount of data')
-	db = args.db
+	db = args.db_file
 	print('db file:', db)
 	with open(args.input, 'r') as f:
 		input_files = f.read().splitlines()
@@ -22,13 +22,12 @@ def convert(cfg, args):
 
 	included_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
 	print(matrix.describe(percentiles=[]))
-	matrix = matrix.astype(np.uint64)
-	tm = Transformer(phylogeny=pd.read_csv(find_pkg_resource('resources/phylogeny.csv'),
-										   index_col=0),
-					 db_file=db)
+	matrix = matrix.astype(np.float32)
+	tm = Transformer(phylogeny=pd.read_csv(find_pkg_resource('resources/phylogeny.csv'), index_col=0),  db_file=db)
 	matrix_genus = tm._extract_layers(matrix, included_ranks=included_ranks)
 	print('Normalizing results...')
-	matrix_genus = matrix_genus / matrix_genus.sum()
-	print(matrix.describe(percentiles=[]))
+	matrix_genus = matrix_genus.div(matrix_genus.sum(axis=0) + 1e-8)
+	print(matrix_genus.describe(percentiles=[]))
+	print('Total NaNs:', matrix_genus.isna().sum().sum())
 	print('Saving results...')
 	matrix_genus.to_hdf(args.output, key='genus', mode='a')

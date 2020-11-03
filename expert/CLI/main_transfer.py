@@ -32,7 +32,6 @@ def transfer(cfg, args):
 
 	# Basic configurations
 	phylogeny = pd.read_csv(find_pkg_resource('resources/phylogeny.csv'), index_col=0)
-	do_finetune = cfg.getboolean('transfer', 'do_finetune')
 	new_mapper = cfg.getboolean('transfer', 'new_mapper')
 	reuse_levels = cfg.get('transfer', 'reuse_levels')
 	finetune_eps = cfg.getint('transfer', 'finetune_epochs')
@@ -64,18 +63,18 @@ def transfer(cfg, args):
 
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, reuse_levels)
-	model.nn = model.build_graph(input_shape=(X.shape[1],))
+	model.nn = model.build_graph(input_shape=(X.shape[1] * phylogeny.shape[1],))
 	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y[0].shape[0]))
 
 	# Feature encoding and standardization
-	X = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
+	X = model.encoder.predict(X.to_numpy(), batch_size=128).reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
 	if args.update_statistics:
-		model.update_statistics(mean=X.mean(), std=X.std())
+		model.update_statistics(mean=X.mean(axis=0), std=X.std(axis=0))
 	X = model.standardize(X)
-	Y = [y.drop(columns=['Unknown']) for y in Y]
 
 	# Sample weight "zero" to mask unknown samples' contribution to loss
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y)]
+	Y = [y.drop(columns=['Unknown']) for y in Y]
 
 	# Train EXPERT model
 	loss_weights = [units/sum(layer_units) for units in layer_units]
@@ -85,10 +84,10 @@ def transfer(cfg, args):
 					 weighted_metrics=[BinaryAccuracy(name='acc'),
 									   AUC(num_thresholds=100, name='auROC', multi_label=False)])
 	model.nn.fit(X, Y, validation_split=args.val_split, batch_size=batch_size, epochs=epochs,
-			  sample_weight=sample_weight, callbacks=callbacks)
+				 sample_weight=sample_weight, callbacks=callbacks)
 	model.nn.summary()
 
-	if do_finetune:
+	if args.finetune:
 		finetune_eps += stopper.stopped_epoch
 		print('Fine-tuning using optimizer with lr={}...'.format(finetune_lr))
 		model.base.trainable = True
@@ -102,7 +101,7 @@ def transfer(cfg, args):
 						 weighted_metrics=[BinaryAccuracy(name='acc'),
 										   AUC(num_thresholds=100, name='auROC', multi_label=False)])
 		model.nn.fit(X, Y, validation_split=args.val_split, batch_size=batch_size, epochs=finetune_eps,
-				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight, callbacks=ft_callbacks)
+					 initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight, callbacks=ft_callbacks)
 
 	# Save EXPERT model
 	model.save_blocks(args.output)

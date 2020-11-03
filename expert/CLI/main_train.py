@@ -61,14 +61,16 @@ def train(cfg, args):
 	model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
 
 	# Feature encoding and standardization
-	X = model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
-	model.update_statistics(mean=X.mean(), std=X.std())
+	X = model.encoder.predict(X, batch_size=batch_size)
+	X = X.reshape(X.shape[0], X.shape[1] * X.shape[2])
+	print('N. NaN in input features:', np.isnan(X).sum())
+	model.update_statistics(mean=X.mean(axis=0), std=X.std(axis=0))
 	X = model.standardize(X)
-	Y = [y.drop(columns=['Unknown']) for y in Y]
 
 	#------------------------------- SELECTIVE LEARNING-----------------------------------------------
 	# Sample weight "zero" to mask unknown samples' contribution to loss
 	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y)]
+	Y = [y.drop(columns=['Unknown']) for y in Y]
 
 	# Train EXPERT model
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
@@ -92,7 +94,7 @@ def train(cfg, args):
 	model.nn.fit(X, Y, validation_split=args.val_split,
 			  batch_size=batch_size, initial_epoch=pretrain_ep, epochs=epochs + pretrain_ep,
 			  sample_weight=sample_weight,
-			  callbacks=[logger, lrreducer, stopper][0:3])
+			  callbacks=callbacks)
 
 	# Save the EXPERT model
 	model.save_blocks(args.output)

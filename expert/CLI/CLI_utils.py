@@ -12,10 +12,10 @@ def get_CFG_reader():
 
 
 def find_pkg_resource(path):
-	if pkg_resources.resource_exists('expert', path.split(':')[1]):
-		return pkg_resources.resource_filename('expert', path.split(':')[1])
+	if pkg_resources.resource_exists('expert', path):
+		return pkg_resources.resource_filename('expert', path)
 	else:
-		raise FileNotFoundError('Resource {} not found, please check'.format(path.split(':')[1]))
+		raise FileNotFoundError('Resource {} not found, please check'.format(path))
 
 
 def get_CLI_parser():
@@ -62,7 +62,8 @@ def get_CLI_parser():
 								 'Input: The directory to generate mapper file, Output: mapper file.\n'
 								 '`-to-otlg`: Map source environments to microbiome ontology.\n'
 								 'Input: The mapper file, Output: The ontologically arranged labels.')
-	map.add_argument('--from-dir', action='store_true', help='Getting mapper file from directory.')
+	map.add_argument('--from-dir', action='store_true',
+					 help='Getting mapper file from directory.')
 	map.add_argument('--to-otlg', action='store_true',
 					 help='Map source environments to microbiome ontology.')
 
@@ -103,7 +104,9 @@ def get_CLI_parser():
 									  'use `-model` option to indicate a customized base model.\n'
 									  'Input: samples, in pandas h5 format, output: expert model')
 	transfer.add_argument('--update-statistics', action='store_true',
-						help='Normalize input samples using mean and std calculated from itself')
+						  help='Normalize input samples using mean and std calculated from itself.')
+	transfer.add_argument('--finetune', action='store_true',
+						  help='Finetune the model during fast adaptation.')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	evaluate = parser.add_argument_group(
