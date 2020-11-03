@@ -5,16 +5,15 @@ from expert.CLI.CLI_utils import find_pkg_resource
 from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.metrics import AUC, BinaryAccuracy
-from sklearn.utils.class_weight import compute_sample_weight
 import pandas as pd
 import numpy as np
 import tensorflow as tf
 import os
 from expert.src.utils import get_dmax
 
-# intersect IDs
 
 def transfer(cfg, args):
+	# Basic configurations for GPU and CPU
 	os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 	os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 	if args.gpu > -1:
@@ -22,19 +21,17 @@ def transfer(cfg, args):
 		for gpu in gpus:
 			tf.config.experimental.set_memory_growth(gpu, True)
 
-	X, idx = read_genus_abu(args.i)
+	# Read data
+	X, idx = read_genus_abu(args.input)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
-
 	print('Reordering labels and samples...')
 	IDs = list(set(X.index.to_list()).intersection(Y[0].index.to_list()))
-
 	X = X.loc[IDs, :]
 	Y = [y.loc[IDs, :] for y in Y]
 	print('Total matched samples:', sum(X.index == Y[0].index))
 
-	validation_split = args.val_split
-	phylogeny = pd.read_csv(find_pkg_resource(cfg.get('DEFAULT', 'phylo')), index_col=0)
-	do_finetune = cfg.getboolean('transfer', 'do_finetune')
+	# Basic configurations
+	phylogeny = pd.read_csv(find_pkg_resource('resources/phylogeny.csv'), index_col=0)
 	new_mapper = cfg.getboolean('transfer', 'new_mapper')
 	reuse_levels = cfg.get('transfer', 'reuse_levels')
 	finetune_eps = cfg.getint('transfer', 'finetune_epochs')
@@ -46,49 +43,51 @@ def transfer(cfg, args):
 	stop_patience = cfg.getint('transfer', 'stop_patience')
 	label_smoothing = cfg.getfloat('transfer', 'label_smoothing')
 	batch_size = cfg.getint('transfer', 'batch_size')
-
-	logger = CSVLogger(filename=args.log)
-	ft_logger = CSVLogger(filename=args.log, append=True)
 	lrreducer = ReduceLROnPlateau(patience=reduce_patience, verbose=5, factor=0.1, min_lr=min_lr)
 	stopper = EarlyStopping(patience=stop_patience, verbose=5, restore_best_weights=True)
-
-	ontology = load_otlg(args.otlg)
-	_, layer_units = parse_otlg(ontology)
-	'''sample_weight = [compute_sample_weight(class_weight='balanced', y=y.to_numpy().argmax(axis=1))
-					 for i, y in enumerate(Y_train)]'''
-	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y)]
-	loss_weights = [units/sum(layer_units) for units in layer_units]
-	
+	callbacks = [lrreducer, stopper]
+	ft_callbacks = [stopper]
+	if args.log:
+		logger = CSVLogger(filename=args.log)
+		ft_logger = CSVLogger(filename=args.log, append=True)
+		callbacks.append(logger)
+		ft_callbacks.append(ft_logger)
 	optimizer = Adam(lr=lr)
 	f_optimizer = Adam(lr=finetune_lr)
-	print('shape for X:', X.shape)
+
+	# Build EXPERT model
+	ontology = load_otlg(args.otlg)
+	_, layer_units = parse_otlg(ontology)
 	base_model = Model(phylogeny=phylogeny, num_features=X.shape[1], restore_from=args.model)
 	init_model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
 
+	# All transferred blocks and layers will be set to be non-trainable automatically.
+	model = transfer_weights(base_model, init_model, reuse_levels)
+	model.nn = model.build_graph(input_shape=(X.shape[1] * phylogeny.shape[1],))
 	print('Total correct samples: {}?{}'.format(sum(X.index == Y[0].index), Y[0].shape[0]))
-	X = init_model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
-	Xf_stats = {}
-	Xf_stats['mean'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'mean_f.for.X_train.npy'))
-	Xf_stats['std'] = np.load(os.path.join(find_pkg_resource(cfg.get('DEFAULT', 'tmp')), 'std_f.for.X_train.npy'))
-	X = (X - Xf_stats['mean']) / Xf_stats['std']
+
+	# Feature encoding and standardization
+	X = model.encoder.predict(X.to_numpy(), batch_size=128).reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
+	if args.update_statistics:
+		model.update_statistics(mean=X.mean(axis=0), std=X.std(axis=0))
+	X = model.standardize(X)
+
+	# Sample weight "zero" to mask unknown samples' contribution to loss
+	sample_weight = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y)]
 	Y = [y.drop(columns=['Unknown']) for y in Y]
 
-	# All transferred blocks and layers will be set to be non-trainable automatically.
-	model = transfer_weights(base_model, init_model, new_mapper, reuse_levels)
-	model.nn = model.build_graph(input_shape=(X.shape[1], ))
+	# Train EXPERT model
+	loss_weights = [units/sum(layer_units) for units in layer_units]
 	print('Training using optimizer with lr={}...'.format(lr))
-	model.nn.compile(optimizer=optimizer,
-				  loss=BinaryCrossentropy(label_smoothing=label_smoothing),
-				  loss_weights=loss_weights, 
-				  weighted_metrics=[BinaryAccuracy(name='acc'),
-									AUC(num_thresholds=100, name='auROC', multi_label=False),
-									AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
-	model.nn.fit(X, Y, validation_split=validation_split, batch_size=batch_size, epochs=epochs,
-			  sample_weight=sample_weight,
-			  callbacks=[logger, lrreducer, stopper])
+	model.nn.compile(optimizer=optimizer, loss=BinaryCrossentropy(label_smoothing=label_smoothing),
+					 loss_weights=loss_weights,
+					 weighted_metrics=[BinaryAccuracy(name='acc'),
+									   AUC(num_thresholds=100, name='auROC', multi_label=False)])
+	model.nn.fit(X, Y, validation_split=args.val_split, batch_size=batch_size, epochs=epochs,
+				 sample_weight=sample_weight, callbacks=callbacks)
 	model.nn.summary()
 
-	if do_finetune:
+	if args.finetune:
 		finetune_eps += stopper.stopped_epoch
 		print('Fine-tuning using optimizer with lr={}...'.format(finetune_lr))
 		model.base.trainable = True
@@ -98,21 +97,11 @@ def transfer(cfg, args):
 			model.spec_outputs[layer].trainable = True
 		model.nn = model.build_graph(input_shape=(X.shape[1], ))
 		model.nn.compile(optimizer=f_optimizer,
-						 loss=BinaryCrossentropy(label_smoothing=label_smoothing),
-						 loss_weights=loss_weights,
+						 loss=BinaryCrossentropy(label_smoothing=label_smoothing), loss_weights=loss_weights,
 						 weighted_metrics=[BinaryAccuracy(name='acc'),
-										   AUC(num_thresholds=100, name='auROC', multi_label=False),
-										   AUC(num_thresholds=100, name='auPRC', curve='PR', multi_label=False)])
-		model.nn.fit(X, Y, validation_split=validation_split,
-				  batch_size=batch_size,
-				  epochs=finetune_eps,
-				  initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight,
-				  callbacks=[ft_logger, stopper])
-		
-		model.save_blocks(args.o)
+										   AUC(num_thresholds=100, name='auROC', multi_label=False)])
+		model.nn.fit(X, Y, validation_split=args.val_split, batch_size=batch_size, epochs=finetune_eps,
+					 initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight, callbacks=ft_callbacks)
 
-		'''sample_weight_test = [zero_weight_unk(y=y, sample_weight=np.ones(y.shape[0])) for i, y in enumerate(Y_test)]	
-		X_test = init_model.encoder(X_test.to_numpy()).numpy().reshape(X_test.shape[0], X_test.shape[1] * phylogeny.shape[1])
-		X_test = (X_test - Xf_stats['mean']) / Xf_stats['std']
-		Y_test = [y.drop(columns=['Unknown']) for y in Y_test]
-		model.nn.evaluate(X_test, Y_test, sample_weight=sample_weight_test)'''
+	# Save EXPERT model
+	model.save_blocks(args.output)

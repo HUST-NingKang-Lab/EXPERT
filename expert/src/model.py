@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout, BatchNormalization,
 	Conv2D, Activation, Lambda, Layer, Input, GaussianNoise, AlphaDropout
 from collections import OrderedDict
 import numpy as np
-from tensorflow.keras.callbacks import *
+import pandas as pd
 from tensorflow.keras import backend as K
 from livingTree import SuperTree
 
@@ -23,12 +23,11 @@ class Model(object):
 			self.ontology = ontology
 			self.labels, self.layer_units = parse_otlg(self.ontology)
 			self.n_layers = len(self.layer_units)
+			self.statistics = pd.DataFrame(index=range(phylogeny.shape[0] * phylogeny.shape[1]), columns=['mean', 'std'])
 			self.base = self.init_base_block(num_features=num_features)
-			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer+2),
-													  n_units=n_units)
+			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer+2), n_units=n_units)
 								for layer, n_units in enumerate(self.layer_units)]
-			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer+2),
-														n_units=n_units)
+			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer+2), n_units=n_units)
 								for layer, n_units in enumerate(self.layer_units)]
 			self.spec_outputs = [self.init_output_block(index=layer, name='l{}o'.format(layer+2), n_units=n_units)
 								 for layer, n_units in enumerate(self.layer_units)]
@@ -52,6 +51,7 @@ class Model(object):
 		#self.feature_mapper.save(self.__pthjoin(path, 'feature_mapper'))
 		self.base.save(self.__pthjoin(path, 'base'), save_format='tf')
 		self.ontology.to_pickle(self.__pthjoin(path, 'ontology.pkl'))
+		self.statistics.to_csv(self.__pthjoin(path, 'statistics.csv'))
 		for layer in range(self.n_layers):
 			self.spec_inters[layer].save(self.__pthjoin(inters_dir, str(layer)), save_format='tf')
 			self.spec_integs[layer].save(self.__pthjoin(integs_dir, str(layer)), save_format='tf')
@@ -68,6 +68,7 @@ class Model(object):
 		integ_dirs = [self.__pthjoin(integs_dir, i) for i in sorted(os.listdir(integs_dir), key=lambda x: int(x))]
 		output_dirs = [self.__pthjoin(outputs_dir, i) for i in sorted(os.listdir(outputs_dir), key=lambda x: int(x))]
 		self.ontology = load_otlg(otlg_dir)
+		self.statistics = pd.read_csv(self.__pthjoin(path, 'statistics.csv'), index_col=0)
 		self.labels, self.layer_units = parse_otlg(self.ontology)
 		self.base = tf.keras.models.load_model(base_dir)
 		self.spec_inters = [tf.keras.models.load_model(dir) for dir in inter_dirs]
@@ -150,6 +151,16 @@ class Model(object):
 		logits = self.nn(inputs)
 		contrib = [self.spec_postprocs[i](logits[i]) for i in range(self.n_layers)]
 		self.estimator = tf.keras.Model(inputs=inputs, outputs=contrib)
+
+	def update_statistics(self, mean, std):
+		stats = self.statistics.copy()
+		stats.loc[:, 'mean'] = mean.tolist()
+		stats.loc[:, 'std'] = std.tolist()
+		self.statistics = stats
+		print(self.statistics)
+
+	def standardize(self, X):
+		return pd.DataFrame(X).sub(self.statistics['mean'], axis=1).div(self.statistics['std'] + 1e-8, axis=1)
 
 	def _init_bn_layer(self):
 		return BatchNormalization(momentum=0.9, scale=False)

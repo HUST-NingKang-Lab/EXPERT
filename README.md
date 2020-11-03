@@ -30,6 +30,8 @@ construct a biome ontology using `microbiomes.txt`
 
 ```shell script
 expert construct -i microbiomes.txt -o ontology.pkl
+# Also equivalent to
+expert construct --input microbiomes.txt --output ontology.pkl
 ```
 
 - Input: `microbiomes.txt` file, contains path from "root" node to each leaf node of biome ontology.
@@ -60,7 +62,9 @@ root:Host-associated:Plants:Rhizosphere:Soil
 Mapping their source environments to microbiome ontology
 
 ```shell script
-expert map -to-otlg -otlg ontology.pkl -i mapper.csv -o labels.h5
+expert map --to-otlg -t ontology.pkl -i mapper.csv -o labels.h5
+# Also equivalent to
+expert map --to-otlg --otlg ontology.pkl --input mapper.csv --output labels.h5
 ```
 
 - Input: the mapper file, contains biome source information for samples.
@@ -74,7 +78,9 @@ expert map -to-otlg -otlg ontology.pkl -i mapper.csv -o labels.h5
 Convert input data to a count matrix in **genus** level.
 
 ```shell script
-expert convert -i countMatrices.txt -in-cm -o countMatrix.h5
+expert convert -i countMatrices.txt --in-cm -o countMatrix.h5
+# Also equivalent to
+expert convert --input countMatrices.txt --output countMatrix.h5 --in-cm 
 ```
 
 - Input: a text file contains path to input count matrix file / OTU table.
@@ -96,7 +102,9 @@ datasets/soil_dataset/root:Host-associated:Plants:Rhizosphere:Soil/MGYS00005146-
 Build EXPERT model from scratch and training
 
 ```bash
-expert train -i countMatrix.h5 -labels labels.h5 -otlg ontology.pkl -o model -log history.csv
+expert train -i countMatrix.h5 -l labels.h5 -t ontology.pkl -o model
+# Also equivalent to
+expert train --input countMatrix.h5 --labels labels.h5 --otlg ontology.pkl --output model
 ```
 
 - Input: biome ontology and converted count matrix in genus level (and also labels for samples involved in the count matrix).
@@ -105,7 +113,9 @@ expert train -i countMatrix.h5 -labels labels.h5 -otlg ontology.pkl -o model -lo
 #### Fast adaptation
 
 ```bash
-expert transfer -i countMatrix.h5 -labels labels.h5 -otlg ontology.pkl -o model -log history.csv
+expert transfer -i countMatrix.h5 -l labels.h5 -t ontology.pkl -o model
+# Also equivalent to
+expert transfer --input countMatrix.h5 --labels labels.h5 --otlg ontology.pkl --output model
 ```
 
 - Input: biome ontology and converted count matrix in genus level (and also labels for samples involved in the count matrix).
@@ -114,7 +124,9 @@ expert transfer -i countMatrix.h5 -labels labels.h5 -otlg ontology.pkl -o model 
 #### Source tracking
 
 ```bash
-expert search -i countMatrix.h5 -o searchResult -gpu -1
+expert search -i countMatrix.h5 -o searchResult
+# Also equivalent to
+expert search --input countMatrix.h5 --output searchResult
 ```
 
 - Input: converted count matrix in genus level.
@@ -142,7 +154,9 @@ Take `layer-2.csv` as an example.
 #### Evaluation
 
 ```bash
-expert evaluate -i searchResultFolder -labels labels.h5 -T 100 -o EvaluationReport -p NUMProcesses
+expert evaluate -i searchResultFolder -l labels.h5 -o EvaluationReport -p NUMProcesses
+# Also equivalent to
+expert evaluate --input searchResultFolder --labels labels.h5 --output EvaluationReport --processors NUMProcesses
 ```
 
 - Input: multi-layer labels and search result (source contribution) for samples.

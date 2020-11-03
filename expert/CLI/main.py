@@ -7,7 +7,6 @@ def main():
 	parser = get_CLI_parser()
 	args = parser.parse_args()
 	cfg = get_CFG_reader()
-
 	if args.mode == 'init':
 		from expert.CLI.main_init import init
 		init(cfg, args)
