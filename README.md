@@ -124,9 +124,9 @@ expert transfer --input countMatrix.h5 --labels labels.h5 --otlg ontology.pkl --
 #### Source tracking
 
 ```bash
-expert search -i countMatrix.h5 -o searchResult
+expert search -i countMatrix.h5 -o searchResult -m model
 # Also equivalent to
-expert search --input countMatrix.h5 --output searchResult
+expert search --input countMatrix.h5 --output searchResult --model model
 ```
 
 - Input: converted count matrix in genus level.
