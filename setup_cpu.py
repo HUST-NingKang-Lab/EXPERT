@@ -13,7 +13,7 @@ DESCRIPTION = "your project description"
 if __name__ == "__main__":
     setup(
         name=NAME,
-        version="0.2-cpu",
+        version="0.3-cpu",
         author=AUTHOR,
         author_email=EMAIL,
         url=URL,

@@ -1,0 +1,11 @@
+setuptools>=40.6.3
+pandas>=1.1.1
+tables>=3.6.1
+tqdm>=4.46.0
+numpy>=1.18.5
+scikit-learn>=0.23.1
+tensorflow-cpu>=2.3.0
+living-tree==0.0.5
+treelib==1.5.5
+seaborn>=0.11.0
+

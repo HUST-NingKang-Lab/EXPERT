@@ -3,6 +3,12 @@ import os
 from configparser import ConfigParser
 import pkg_resources
 
+def set_seed(SEED):
+	os.environ['PYTHONHASHSEED'] = str(SEED)
+	from numpy.random import seed
+	seed(SEED)
+	from tensorflow.random import set_seed
+	set_seed(SEED)
 
 def get_CFG_reader():
 	cfg = ConfigParser()
@@ -41,7 +47,7 @@ def get_CLI_parser():
 						help='The path to microbiome ontology.')
 	parser.add_argument('-l', '--labels', type=str, default=None,
 						help='The path to h5 file (storing labels for the input data).')
-	parser.add_argument('-m', '--model', type=str, default=pkg_resources.resource_filename('expert', 'resources/base_model'),
+	parser.add_argument('-m', '--model', type=str, default=pkg_resources.resource_filename('expert', 'resources/general_model'),
 						help='The path to expert model')
 	parser.add_argument('-g', '--gpu', type=int, default=-1,
 						help='-1: CPU only, 0: GPU0, 1: GPU1, ...')
@@ -49,6 +55,12 @@ def get_CLI_parser():
 					   help='The fraction of validation samples.')
 	parser.add_argument('-H', '--log', type=str, default=None,
 					   help='The path to store training history of expert model.')
+	parser.add_argument('--dropout-rate', type=float, default=0,
+						  help='Set the dropout rate to prevent over-fitting.')
+	parser.add_argument('--batch-size', type=int, default=32,
+						help='Set the batch size for searching.')
+	parser.add_argument('--seed', type=int, default=1,
+						  help='Set the seed for randomized processes.')
 
 	# ------------------------------------------------------------------------------------------------------------------
 	construct = parser.add_argument_group(
@@ -115,7 +127,7 @@ def get_CLI_parser():
 									  'Input: search results, output: evaluation report')
 	evaluate.add_argument('-T', type=int, default=100,
 						  help='The number of thresholds for evaluation.')
-	evaluate.add_argument('-S', type=int, default=10,
+	evaluate.add_argument('-S', type=int, default=0,
 						  help='The threshold when averaging metrics of each biome source with in each ontology layer')
 
 	# ------------------------------------------------------------------------------------------------------------------
@@ -123,4 +135,6 @@ def get_CLI_parser():
 		title='search', description='Search for source environments of your microbial samples using expert model.\n')
 	search.add_argument('--ofmt', type=str, default=None,
 						help='The output format.')
+	search.add_argument('--measure-unknown', action='store_true',
+						help='Measure the contribution from unknown source.')
 	return parser

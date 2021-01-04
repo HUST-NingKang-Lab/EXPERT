@@ -18,9 +18,10 @@ class Evaluator:
         self.predictions_multilayer = predictions_multilayer
         self.actual_sources_multilayer = actual_sources_multilayer
         self.n_layers = len(actual_sources_multilayer)
-        labels_multilayer = [actual_sources_multilayer[layer].drop(columns=['Unknown']).columns.to_series()
+        labels_multilayer = [actual_sources_multilayer[layer].drop(columns=['Unknown'], errors='ignore').columns.to_series()
                              for layer in trange(self.n_layers)]
-        self.labels_multilayer = [labels_multilayer[layer][actual_sources_multilayer[layer].drop(columns=['Unknown']).sum() > 0]
+        self.labels_multilayer = [labels_multilayer[layer][actual_sources_multilayer[layer].drop(columns=['Unknown'],
+                                                                                                 errors='ignore').sum() > 0]
                                   for layer in trange(self.n_layers)]
         self.num_thresholds = num_thresholds
         self.thresholds = (np.arange(num_thresholds+2) / num_thresholds).reshape(num_thresholds+2, 1) # col vector

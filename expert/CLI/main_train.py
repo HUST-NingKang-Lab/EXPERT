@@ -23,7 +23,7 @@ def train(cfg, args):
 	X, idx = read_genus_abu(args.input)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
 	print('Reordering labels and samples...')
-	IDs = list(set(X.index.to_list()).intersection(Y[0].index.to_list()))
+	IDs = sorted(list(set(X.index.to_list()).intersection(Y[0].index.to_list())))
 	X = X.loc[IDs, :]
 	Y = [y.loc[IDs, :] for y in Y]
 	print('Total matched samples:', sum(X.index == Y[0].index))
@@ -49,6 +49,7 @@ def train(cfg, args):
 	phylogeny = pd.read_csv(find_pkg_resource('resources/phylogeny.csv'), index_col=0)
 	pretrain_opt = Adam(lr=pretrain_lr)
 	optimizer = Adam(lr=lr)
+	dropout_rate = args.dropout_rate
 
 	# Calculate sample weight for each layer, assign 0 weight for sample with 0 labels
 	#sample_weight = [zero_weight_unk(y=y, sample_weight=compute_sample_weight(class_weight='balanced',
@@ -58,7 +59,8 @@ def train(cfg, args):
 	# Build the model
 	ontology = load_otlg(args.otlg)
 	_, layer_units = parse_otlg(ontology)
-	model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
+	model = Model(phylogeny=phylogeny, num_features=X.shape[1],
+				  ontology=ontology, dropout_rate=dropout_rate)
 
 	# Feature encoding and standardization
 	X = model.encoder.predict(X, batch_size=batch_size)
@@ -75,7 +77,7 @@ def train(cfg, args):
 	# Train EXPERT model
 	print('Pre-training using Adam with lr={}...'.format(pretrain_lr))
 	model.nn.compile(optimizer=pretrain_opt,
-				  loss=BinaryCrossentropy(),
+				  loss=BinaryCrossentropy(from_logits=True),
 				  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(),
 				  weighted_metrics=[BinaryAccuracy(name='acc')]) 
 	model.nn.fit(X, Y, validation_split=args.val_split,
@@ -87,10 +89,9 @@ def train(cfg, args):
 	
 	print('Training using Adam with lr={}...'.format(lr))
 	model.nn.compile(optimizer=optimizer,
-				  loss=BinaryCrossentropy(),
+				  loss=BinaryCrossentropy(from_logits=True),
 				  loss_weights=(np.array(layer_units) / sum(layer_units)).tolist(),
-				  weighted_metrics=[BinaryAccuracy(name='acc'), 
-				  					AUC(num_thresholds=100, name='auROC', multi_label=False)])
+				  weighted_metrics=[BinaryAccuracy(name='acc')])
 	model.nn.fit(X, Y, validation_split=args.val_split,
 			  batch_size=batch_size, initial_epoch=pretrain_ep, epochs=epochs + pretrain_ep,
 			  sample_weight=sample_weight,

@@ -25,7 +25,7 @@ def transfer(cfg, args):
 	X, idx = read_genus_abu(args.input)
 	Y = read_labels(args.labels, shuffle_idx=idx, dmax=get_dmax(args.labels))
 	print('Reordering labels and samples...')
-	IDs = list(set(X.index.to_list()).intersection(Y[0].index.to_list()))
+	IDs = sorted(list(set(X.index.to_list()).intersection(Y[0].index.to_list())))
 	X = X.loc[IDs, :]
 	Y = [y.loc[IDs, :] for y in Y]
 	print('Total matched samples:', sum(X.index == Y[0].index))
@@ -54,12 +54,14 @@ def transfer(cfg, args):
 		ft_callbacks.append(ft_logger)
 	optimizer = Adam(lr=lr)
 	f_optimizer = Adam(lr=finetune_lr)
+	dropout_rate = args.dropout_rate
 
 	# Build EXPERT model
 	ontology = load_otlg(args.otlg)
 	_, layer_units = parse_otlg(ontology)
 	base_model = Model(phylogeny=phylogeny, num_features=X.shape[1], restore_from=args.model)
-	init_model = Model(phylogeny=phylogeny, num_features=X.shape[1], ontology=ontology)
+	init_model = Model(phylogeny=phylogeny, num_features=X.shape[1],
+					   ontology=ontology, dropout_rate=dropout_rate)
 
 	# All transferred blocks and layers will be set to be non-trainable automatically.
 	model = transfer_weights(base_model, init_model, reuse_levels)
@@ -79,10 +81,9 @@ def transfer(cfg, args):
 	# Train EXPERT model
 	loss_weights = [units/sum(layer_units) for units in layer_units]
 	print('Training using optimizer with lr={}...'.format(lr))
-	model.nn.compile(optimizer=optimizer, loss=BinaryCrossentropy(label_smoothing=label_smoothing),
+	model.nn.compile(optimizer=optimizer, loss=BinaryCrossentropy(from_logits=True, label_smoothing=label_smoothing),
 					 loss_weights=loss_weights,
-					 weighted_metrics=[BinaryAccuracy(name='acc'),
-									   AUC(num_thresholds=100, name='auROC', multi_label=False)])
+					 weighted_metrics=[BinaryAccuracy(name='acc')])
 	model.nn.fit(X, Y, validation_split=args.val_split, batch_size=batch_size, epochs=epochs,
 				 sample_weight=sample_weight, callbacks=callbacks)
 	model.nn.summary()
@@ -97,9 +98,9 @@ def transfer(cfg, args):
 			model.spec_outputs[layer].trainable = True
 		model.nn = model.build_graph(input_shape=(X.shape[1], ))
 		model.nn.compile(optimizer=f_optimizer,
-						 loss=BinaryCrossentropy(label_smoothing=label_smoothing), loss_weights=loss_weights,
-						 weighted_metrics=[BinaryAccuracy(name='acc'),
-										   AUC(num_thresholds=100, name='auROC', multi_label=False)])
+						 loss=BinaryCrossentropy(from_logits=True, label_smoothing=label_smoothing),
+						 loss_weights=loss_weights,
+						 weighted_metrics=[BinaryAccuracy(name='acc')])
 		model.nn.fit(X, Y, validation_split=args.val_split, batch_size=batch_size, epochs=finetune_eps,
 					 initial_epoch=stopper.stopped_epoch, sample_weight=sample_weight, callbacks=ft_callbacks)
 

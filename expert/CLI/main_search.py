@@ -20,16 +20,26 @@ def search(cfg, args):
 	phylogeny = pd.read_csv(find_pkg_resource('resources/phylogeny.csv'), index_col=0)
 
 	# Build EXPERT model
-	model = Model(phylogeny=phylogeny, num_features=phylogeny.shape[0], restore_from=args.model)
+	model = Model(phylogeny=phylogeny, num_features=phylogeny.shape[0], restore_from=args.model,
+				  open_set=args.measure_unknown)
 	X = model.encoder(X.to_numpy()).numpy().reshape(X.shape[0], X.shape[1] * phylogeny.shape[1])
 	X = model.standardize(X)
 	model.build_estimator()
 
 	# Calculate source contribution
-	contrib_arrs = model.estimator.predict(X)
+	contrib_arrs = model.estimator.predict(X, batch_size=args.batch_size, verbose=1)
+	if model.n_layers == 1:
+		contrib_arrs = [contrib_arrs]
 	labels = model.labels
-	contrib_layers = {'layer-'+str(i+2): pd.DataFrame(contrib_arrs[i], index=sampleIDs, columns=labels[i+1] + ['Unknown'])
-					  for i, key in enumerate(labels.keys())}
+	if model.open_set:
+		contrib_layers = {
+			'layer-' + str(i + 2): pd.DataFrame(contrib_arrs[i], index=sampleIDs, columns=labels[i + 1] + ['Unknown'])
+			for i, key in enumerate(labels.keys())}
+	else:
+		contrib_layers = {
+			'layer-' + str(i + 2): pd.DataFrame(contrib_arrs[i], index=sampleIDs, columns=labels[i + 1])
+			for i, key in enumerate(labels.keys())}
+
 	for layer, contrib in contrib_layers.items():
 		if not os.path.isdir(args.output):
 			os.mkdir(args.output)

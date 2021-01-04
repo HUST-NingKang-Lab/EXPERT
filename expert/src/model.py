@@ -8,17 +8,19 @@ import pandas as pd
 from tensorflow.keras import backend as K
 from livingTree import SuperTree
 
-init = tf.keras.initializers.HeUniform(seed=2)
-#init = tf.keras.initializers.LecunNormal(seed=2)
-sig_init = tf.keras.initializers.GlorotUniform(seed=2)
+init = tf.keras.initializers.HeUniform()
+#init = tf.keras.initializers.LecunNormal()
+sig_init = tf.keras.initializers.GlorotUniform()
 
 
 class Model(object):
 
-	def __init__(self, phylogeny, num_features, ontology=None, restore_from=None):
+	def __init__(self, phylogeny, num_features, ontology=None, restore_from=None, dropout_rate=0, open_set=False):
 		self.expand_dims = tf.expand_dims
 		self.concat = Concatenate(axis=1)
 		self.concat_a2 = Concatenate(axis=2)
+		self.dropout = Dropout(dropout_rate)
+		self.open_set = open_set
 		if ontology:
 			self.ontology = ontology
 			self.labels, self.layer_units = parse_otlg(self.ontology)
@@ -27,9 +29,9 @@ class Model(object):
 			self.base = self.init_base_block(num_features=num_features)
 			self.spec_inters = [self.init_inter_block(index=layer, name='l{}_inter'.format(layer+2), n_units=n_units)
 								for layer, n_units in enumerate(self.layer_units)]
-			self.spec_integs = [self._init_integ_block(index=layer, name='l{}_integration'.format(layer+2), n_units=n_units)
+			self.spec_integs = [self.init_integ_module(index=layer, name='l{}_integration'.format(layer + 2), n_units=n_units)
 								for layer, n_units in enumerate(self.layer_units)]
-			self.spec_outputs = [self.init_output_block(index=layer, name='l{}o'.format(layer+2), n_units=n_units)
+			self.spec_outputs = [self.init_output_module(index=layer, name='l{}o'.format(layer + 2), n_units=n_units)
 								 for layer, n_units in enumerate(self.layer_units)]
 		elif restore_from:
 			self.__restore_from(restore_from)
@@ -38,7 +40,7 @@ class Model(object):
 			raise ValueError('Please given correct model path to restore, '
 							 'or specify layer_units to build model from scratch.')
 		self.encoder = self.init_encoder_block(phylogeny)
-		self.spec_postprocs = [self.init_post_proc_layer(name='l{}'.format(layer + 2)) for layer in range(self.n_layers)]
+		self.spec_postprocs = [self.init_post_proc_module(name='l{}'.format(layer + 2)) for layer in range(self.n_layers)]
 		self.nn = self.build_graph(input_shape=(num_features * phylogeny.shape[1],))
 
 	def save_blocks(self, path):
@@ -89,7 +91,7 @@ class Model(object):
 		block = tf.keras.Sequential(name='base')
 		block.add(Flatten()) # (1000, )
 		block.add(Dense(2**10, kernel_initializer=init))
-		block.add(Activation('relu')) # (512, )
+		block.add(Activation('relu')) # (1024, )
 		block.add(Dense(2**9, kernel_initializer=init))
 		block.add(Activation('relu')) # (512, )
 		return block
@@ -105,34 +107,41 @@ class Model(object):
 		block.add(Activation('relu'))
 		return block
 
-	def _init_integ_block(self, index, name, n_units):
+	def init_integ_module(self, index, name, n_units):
 		block = tf.keras.Sequential(name=name)
 		k = index
 		block.add(Dense(self._get_n_units(3*n_units), name='l' + str(k) + '_integ_fc0', kernel_initializer=sig_init))
 		block.add(Activation('tanh'))
 		return block
 
-	def init_output_block(self, index, name, n_units):
+	def init_output_module(self, index, name, n_units):
 		k = index
 		block = tf.keras.Sequential(name=name)
 		block.add(Dense(n_units, name='l' + str(index+2) + 'o_fc', kernel_initializer=sig_init))
-		block.add(Activation('sigmoid'))
+		#block.add(Activation('sigmoid'))
 		return block
 
-	def init_post_proc_layer(self, name):
-		def calculateSourceContribution(x):
+	def init_post_proc_module(self, name):
+		def calculateUnknownContribution(x):
 			#x = K.relu(x)
 			total_contrib = tf.constant([[1]], dtype=tf.float32, shape=(1, 1))
 			unknown_contrib = K.relu(tf.subtract(total_contrib, K.sum(x, keepdims=True, axis=1)))
 			contrib = K.concatenate((x, unknown_contrib), axis=1)
 			scaled_contrib = tf.divide(contrib, K.sum(contrib, keepdims=True, axis=1))
 			return scaled_contrib
-		return Lambda(calculateSourceContribution, name=name)
+
+		block = tf.keras.Sequential(name=name)
+		if self.open_set:
+			block.add(Activation('sigmoid'))
+			block.add(Lambda(calculateUnknownContribution, name=name+'_l'))
+		else:
+			block.add(Activation('softmax'))
+		return block
 
 	def build_graph(self, input_shape):
 		inputs = Input(shape=input_shape)
 		#features = self.encoder(inputs)
-		features = inputs
+		features = self.dropout(inputs)
 		base = self.base(features)
 		inter_logits = [self.spec_inters[i](base) for i in range(self.n_layers)]
 		integ_logits = []
@@ -140,7 +149,8 @@ class Model(object):
 			if layer == 0:
 				integ_logits.append(self.spec_integs[layer](inter_logits[layer]))
 			else:
-				logits = self.concat([0.1 * integ_logits[layer-1], inter_logits[layer]])
+				#logits = self.concat([0.1 * integ_logits[layer-1], inter_logits[layer]])
+				logits = self.concat([integ_logits[layer - 1], inter_logits[layer]])
 				integ_logits.append(self.spec_integs[layer](logits))
 		out_probas = [self.spec_outputs[i](integ_logits[i]) for i in range(self.n_layers)]
 		nn = tf.keras.Model(inputs=inputs, outputs=out_probas)
@@ -149,6 +159,8 @@ class Model(object):
 	def build_estimator(self):
 		inputs = Input(shape=self.nn.input_shape[1:])
 		logits = self.nn(inputs)
+		if self.n_layers == 1:
+			logits = [logits]
 		contrib = [self.spec_postprocs[i](logits[i]) for i in range(self.n_layers)]
 		self.estimator = tf.keras.Model(inputs=inputs, outputs=contrib)
 
@@ -220,7 +232,7 @@ class Encoder(Layer):
 		return config
 
 
-# redefine here to avoid circular importing
+# re-define here to avoid circular importing
 
 def load_otlg(path):
 	otlg = SuperTree().from_pickle(path)

@@ -28,8 +28,7 @@ class Transformer(object):
 		:return:
 		"""
 		if included_ranks == None:
-			included_ranks = ['superkingdom', 'phylum', 'class', 'order',
-							  'family', 'genus']
+			included_ranks = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus']
 
 		# Filter, taxonomies with sk in db are kept.
 		taxas = pd.Series(count_matrix.index.to_list(), index=count_matrix.index)
@@ -57,10 +56,8 @@ class Transformer(object):
 		lineages = self._track_lineages(multi_entries=multi_entries)
 
 		# Post-process lineages
-		add_prefix = lambda x: ('sk' if x.name == 'superkingdom'
-								else x.name[0:1]) + '__' + x
-		str_cumsum = lambda x: pd.Series([';'.join(x[0:i])
-										  for i in range(1, x.shape[0] + 1)], index=x.index)
+		add_prefix = lambda x: ('sk' if x.name == 'superkingdom' else x.name[0:1]) + '__' + x
+		str_cumsum = lambda x: pd.Series([';'.join(x[0:i]) for i in range(1, x.shape[0] + 1)], index=x.index)
 		lineages = lineages.apply(add_prefix, axis=0).apply(str_cumsum, axis=1)
 
 		del multi_entries
