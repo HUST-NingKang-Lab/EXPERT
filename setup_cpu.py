@@ -5,9 +5,9 @@ from setuptools import find_packages
 NAME = "expert"
 AUTHOR = "Hui Chong"
 EMAIL = "huichong.me@gmail.com"
-URL = "your project url"
-LICENSE = "your license"
-DESCRIPTION = "your project description"
+URL = "https://github.com/HUST-NingKang-Lab/EXPERT"
+LICENSE = "MIT"
+DESCRIPTION = "Exact and pervasive expert model for source tracking based on transfer learning"
 
 
 if __name__ == "__main__":
