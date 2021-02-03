@@ -49,7 +49,7 @@ expert search -i countMatrix.h5 -o searchResult -m model
 
 ## Advanced usage
 
-Please refer to our detailed [documentation]([advanced usage · HUST-NingKang-Lab/EXPERT Wiki (github.com)](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage)).
+Please refer to our detailed [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
 
 ## Input abundance data
 
