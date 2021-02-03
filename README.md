@@ -29,16 +29,11 @@ For support using EXPERT, feel free to [contact us](https://github.com/HUST-Ning
 
 ## Installation
 
-- Install EXPERT through `pip` package manager
+You can simply install EXPERT using `pip` package manager.
 
-```shell script
-pip install expert-mst
-```
-
-- Initialize EXPERT and install NCBI taxonomy database
-
-```
-expert init
+```bash
+pip install expert-mst    # Install EXPERT
+expert init               # Initialize EXPERT and install NCBI taxonomy database
 ```
 
 ## Quick start
