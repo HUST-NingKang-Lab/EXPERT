@@ -13,7 +13,7 @@ DESCRIPTION = "Exact and pervasive expert model for source tracking based on tra
 if __name__ == "__main__":
     setup(
         name=NAME,
-        version="0.3-g",
+        version="0.3",
         author=AUTHOR,
         author_email=EMAIL,
         url=URL,
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         packages=find_packages(),
         package_dir={'expert': 'expert'},
         include_package_data=True,
-        install_requires=open("./requirements_gpu.txt", "r").read().splitlines(),
+        install_requires=open("./requirements_cpu.txt", "r").read().splitlines(),
         long_description=open("./README.md", "r").read(),
         long_description_content_type='text/markdown',
         # change package_name to your package name.
