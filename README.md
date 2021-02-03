@@ -57,7 +57,7 @@ expert search -i countMatrix.h5 -o searchResult -m model
 
 ## Advanced usage
 
-EXPERT has enabled the adaptation to context-dependent studies, in which users can choose potential sources to be estimated. Please follow our guide [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
+EXPERT has enabled the adaptation to context-dependent studies, in which you can choose potential sources to be estimated. Please follow our [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
 
 ## Input abundance data
 
