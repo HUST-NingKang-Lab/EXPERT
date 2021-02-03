@@ -1,10 +1,10 @@
-# EXPERT
+# EXPERT - scalable model for microbial source tracking: towards better understanding the dark matters in microbial community
 
-### Exact and pervasive expert model for source tracking based on transfer learning
+### supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability).
 
-Habitat specific patterns reflected by microbial communities, as well as complex interactions between the community and their environments or hosts' characteristics, have created obstacles for microbial source tracking: diverse and context-dependent applications are asking for quantification of the contributions of different niches (biomes), which have already overwhelmed existing methods. Moreover, existing source tracking methods could not extend well for source tracking samples from understudied biomes, as well as samples from longitudinal studies. 
+Challenges remain to be addressed in terms of quantifying source origins for microbiome samples in an ultrafast, comprehensive, and context-aware manner. Traditional approaches to such quantification have severe trade-offs between efficiency, accuracy, and scalability. 
 
-Built upon the biome ontology information and transfer learning techniques, EXPERT has acquired the context-aware flexibility and could easily expand the supervised model's search scope to include the context-dependent community samples and understudied biomes. While at the same time, it is superior to current approaches in source tracking accuracy and speed. EXPERT's superiority has been demonstrated on multiple source tracking tasks, including source tracking samples collected at different disease stages and longitudinal samples. For example, when dealing with 635 samples from a recent study of colorectal cancer, EXPERT could achieve an AUROC of 0.977 when predicting the host's phenotypical status. In summary, EXPERT has unleashed the potential of model-based source tracking approaches, enabling source tracking in versatile context-dependent settings, accomplishing pervasive and in-depth knowledge discovery from microbiome.
+Here, we introduce EXPERT, a scalable community-level microbial source tracking approach. Built upon the biome ontology information and transfer learning techniques, EXPERT has acquired the context-aware flexibility and could easily expand the supervised model's search scope to include the context-dependent community samples and understudied biomes. While at the same time, it is superior to current approaches in source tracking accuracy and speed. EXPERT's superiority has been demonstrated on multiple source tracking tasks, including source tracking samples collected at different disease stages and longitudinal samples. For details refer to our original study. 
 
 If you use EXPERT in a scientific publication, we would appreciate citations to the following paper:
 
@@ -14,9 +14,9 @@ Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Siche
 bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 ```
 
-If you have any question about our work, feel free to contact [us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer).
+This is our beta version, any comments or insights would be greatly appreciated. 
 
-Thank you for using EXPERT.
+For support using EXPERT, feel free to [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). Thank you for using EXPERT.
 
 ## Current features
 
