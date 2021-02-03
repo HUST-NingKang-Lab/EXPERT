@@ -1,6 +1,6 @@
 # EXPERT - a scalable model for quantifying source contributions for microbial communities
 
-### supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability), towards better understanding the dark matters in microbial community
+### Supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability), towards better understanding the dark matters in microbial community.
 
 Challenges remain to be addressed in terms of quantifying source origins for microbiome samples in an ultrafast, comprehensive, and context-aware manner. Traditional approaches to such quantification have severe trade-offs between efficiency, accuracy, and scalability. 
 
