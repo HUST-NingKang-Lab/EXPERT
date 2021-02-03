@@ -2,24 +2,49 @@
 
 ### Exact and pervasive expert model for source tracking based on transfer learning
 
-## Introduction
+Habitat specific patterns reflected by microbial communities, as well as complex interactions between the community and their environments or hosts' characteristics, have created obstacles for microbial source tracking: diverse and context-dependent applications are asking for quantification of the contributions of different niches (biomes), which have already overwhelmed existing methods. Moreover, existing source tracking methods could not extend well for source tracking samples from understudied biomes, as well as samples from longitudinal studies. 
 
-Based on Ontology-aware Neural Network architecture, EXPERT was trained using information-weighted loss to selectively learn from the training data, thus bypassing the negative impact of incomplete biome source information of data. Transfer learning technique was used to better adapt to novel biome ontology in a timely manner. 
+Built upon the biome ontology information and transfer learning techniques, EXPERT has acquired the context-aware flexibility and could easily expand the supervised model's search scope to include the context-dependent community samples and understudied biomes. While at the same time, it is superior to current approaches in source tracking accuracy and speed. EXPERT's superiority has been demonstrated on multiple source tracking tasks, including source tracking samples collected at different disease stages and longitudinal samples. For example, when dealing with 635 samples from a recent study of colorectal cancer, EXPERT could achieve an AUROC of 0.977 when predicting the host's phenotypical status. In summary, EXPERT has unleashed the potential of model-based source tracking approaches, enabling source tracking in versatile context-dependent settings, accomplishing pervasive and in-depth knowledge discovery from microbiome.
 
-The program is designed to help you to transfer Ontology-aware Neural Network model to other source tracking tasks. Feel free to contact us if you have any question. Thank you for using EXPERT.
+If you use EXPERT in a scientific publication, we would appreciate citations to the following paper:
 
-## Main features
+```
+Enabling technology for microbial source tracking based on transfer learning: From ontology-aware general knowledge to context-aware expert systems
+Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Sicheng Wu, Weihua Chen, Kang Ning
+bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
+```
 
-- Fast, accurate and interpretable source tracking via **Ontology-aware Neural Network architecture**
-- Selective learning from training data via **information-weighted loss**
-- Fast adaptation to novel biome ontology via **transfer learning**
-- Ultra-fast data cleaning via **in-memory NCBI taxonomy database**
-- Parallelized feature encoding via `Tensorflow.keras`
+If you have any question about our work, feel free to contact [us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer).
+
+Thank you for using EXPERT.
+
+## Current features
+
+- Context-aware ability to adapt to microbiome studies via **transfer learning**
+- Fast, accurate and interpretable source tracking via **ontology-aware forward propagation**
+- Selective learning from training data
+- Ultra-fast data cleaning & cleaning via in-memory NCBI taxonomy database
+- Parallelized feature encoding via `tensorflow.keras`
 
 ## Installation
 
+- Install EXPERT through `pip` package manager (recommended)
+
 ```shell script
-python setup.py install
+pip install expert-mst
+```
+
+- Initialize EXPERT and install NCBI taxonomy database
+
+```
+expert init
+```
+
+## Quick start
+
+```
+expert convert 
+expert search
 ```
 
 ## Usage
@@ -83,7 +108,7 @@ expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
 expert convert --input countMatrices.txt --output countMatrix.h5 --in-cm 
 ```
 
-- Input: a text file contains path to input count matrix file / OTU table.
+- Input: a text file contains path to input count matrix files / abundance tables.
 
 ```
 datasets/soil_dataset/root:Host-associated:Plants:Rhizosphere:Soil/MGYS00005146-ERR1690680.tsv
@@ -206,9 +231,11 @@ Run the program with `-h` option to see a detailed description on work modes & o
 
 EXPERT takes two kinds of **abundance data **as inputs. 
 
-#### Taxonomic assignments result for a single sample (OTU table)
+#### Taxonomic assignments result for a single sample (abundance table)
 
-Notice that here is a header "# Constructed from biom file" in the first line.
+Both **amplicon sequencing** and **whole-genome sequencing** data are supported. 
+
+The example shown below is obtained through amplicon sequencing. Note that here is a header "# Constructed from biom file" in the first line.
 
 <table><thead><tr><th colspan="3"># Constructed from biom file</th></tr></thead><tbody><tr><td># OTU ID</td><td>ERR1754760</td><td>taxonomy</td></tr><tr><td>207119</td><td>19.0</td><td>sk__Archaea</td></tr><tr><td>118090</td><td>45.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__;o__Nitrosopumilales;f__Nitro...</td></tr><tr><td>153156</td><td>38.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__;o__Nitrosopumilales;f__Nitro...</td></tr><tr><td>131704</td><td>1.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__Nitrososphaeria;o__Nitrososp...</td></tr><tr><td>103181</td><td>5174.0</td><td>sk__Bacteria</td></tr><tr><td>157361</td><td>9.0</td><td>sk__Bacteria;k__;p__;c__;o__;f__;g__;s__agricultural_soil_bacterium_SC-I-11</td></tr></tbody></table>
 
