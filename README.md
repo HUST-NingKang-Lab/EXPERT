@@ -1,8 +1,10 @@
 # EXPERT - a scalable model for quantifying source contributions for microbial communities
 
+![](https://img.shields.io/badge/PYPI-v0.3-blue?style=flat-square&logo=appveyor)![](https://img.shields.io/badge/status-beta-yellow?style=flat-square&logo=appveyor)![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat-square&logo=appveyor)![](https://img.shields.io/github/license/HUST-NingKang-Lab/EXPERT?style=flat-square&logo=appveyor)
+
 Challenges remain to be addressed in terms of quantifying source origins for microbiome samples in a fast, comprehensive, and context-aware manner. Traditional approaches to such quantification have severe trade-offs between efficiency, accuracy, and scalability. 
 
-Here, we introduce EXPERT, a scalable community-level microbial source tracking approach. Built upon the biome ontology information and transfer learning techniques, EXPERT has acquired the context-aware flexibility and could easily expand the supervised model's search scope to include the context-dependent community samples and understudied biomes. While at the same time, it is superior to current approaches in source tracking accuracy and speed. EXPERT's superiority has been demonstrated on multiple source tracking tasks, including source tracking samples collected at different disease stages and longitudinal samples. For details refer to our [original study](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1). 
+Here, we introduce EXPERT, a scalable community-level microbial source tracking approach. Built upon the biome ontology information and transfer learning techniques, EXPERT has acquired the context-aware flexibility and could easily expand the supervised model's search scope to include the context-depende/nt community samples and understudied biomes. While at the same time, it is superior to current approaches in source tracking accuracy and speed. EXPERT's superiority has been demonstrated on multiple source tracking tasks, including source tracking samples collected at different disease stages and longitudinal samples. For details refer to our [original study](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1). 
 
 Supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability), towards better understanding the dark matters in microbial community.
 
@@ -59,10 +61,6 @@ Enabling technology for microbial source tracking based on transfer learning: Fr
 Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Sicheng Wu, Weihua Chen, Kang Ning
 bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 ```
-
-## License
-
-[![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
 
 ## Maintainer
 
