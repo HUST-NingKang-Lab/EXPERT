@@ -6,6 +6,8 @@ Here, we introduce EXPERT, a scalable community-level microbial source tracking 
 
 Supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability), towards better understanding the dark matters in microbial community.
 
+[toc]
+
 ## Support
 
 For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). 
@@ -57,6 +59,8 @@ expert search -i countMatrix.h5 -o searchResult -m model
 ## Advanced usage
 
 EXPERT has enabled the adaptation to context-dependent studies, in which you can choose potential sources to be estimated. Please follow our [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
+
+More functional show-cases can be found at [EXPERT-use-cases](https://github.com/HUST-NingKang-Lab/EXPERT-use-cases). 
 
 ## Input abundance data
 
