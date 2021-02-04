@@ -12,7 +12,7 @@ For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-L
 
 ## How-to-cite
 
-If you use EXPERT in a scientific publication, we would appreciate citations to the following paper:
+If you are using EXPERT in a scientific publication, or inspired by the approach, we would appreciate citations to the following paper:
 
 ```
 Enabling technology for microbial source tracking based on transfer learning: From ontology-aware general knowledge to context-aware expert systems
