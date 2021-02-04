@@ -8,11 +8,12 @@ Supervised learning (with high efficiency and accuracy) meets transfer learning 
 
 ## Support
 
-For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). This is our beta version, any comments or insights would be greatly appreciated. 
+For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). 
+This is our beta version, any comments or insights would be greatly appreciated. 
 
 ## How-to-cite
 
-If you are using EXPERT in a scientific publication, or inspired by the approach, we would appreciate citations to the following paper:
+If you are using EXPERT in a scientific publication (or inspired by the approach), we would appreciate citations to the following paper:
 
 ```
 Enabling technology for microbial source tracking based on transfer learning: From ontology-aware general knowledge to context-aware expert systems
@@ -34,22 +35,22 @@ bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 You can simply install EXPERT using `pip` package manager.
 
 ```bash
-pip install expert-mst    # Install EXPERT
-expert init               # Initialize EXPERT and install NCBI taxonomy database
+$ pip install expert-mst    # Install EXPERT
+$ expert init               # Initialize EXPERT and install NCBI taxonomy database
 ```
 
 ## Quick start
 
 Convert input abundance data to model-acceptable ` hdf` file.
 
-```
-expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
+```bash
+$ expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
 ```
 
 Source track microbial communities. Here you can specify an EXPERT model for the source tracking.  We have provided our general model, human model and disease model (refer to our [original study](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) for details).
 
-```
-expert search -i countMatrix.h5 -o searchResult -m model
+```bash
+$ expert search -i countMatrix.h5 -o searchResult -m model
 ```
 
 ## Advanced usage
@@ -58,7 +59,7 @@ EXPERT has enabled the adaptation to context-dependent studies, in which you can
 
 ## Input abundance data
 
-EXPERT takes two kinds of **abundance data** as inputs. 
+EXPERT takes two kinds of abundance data as inputs. 
 
 1. Taxonomic assignments result for a single sample (abundance table). The example shown below is obtained through amplicon sequencing. Note that here is a header "# Constructed from biom file" in the first line.
 
@@ -67,6 +68,8 @@ EXPERT takes two kinds of **abundance data** as inputs.
 2. Taxonomic assignments result for multiple samples (count matrix)
 
 <table><thead><tr><th>#SampleID</th><th>ERR1844510</th><th>ERR1844449</th><th>ERR1844450</th><th>ERR1844451</th></tr></thead><tbody><tr><td>sk__Archaea</td><td>1.0</td><td>17.0</td><td>8.0</td><td>16.0</td></tr><tr><td>sk__Archaea;k__;p__Crenarchaeota</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Euryarchaeota</td><td>8.0</td><td>2.0</td><td>3.0</td><td>1.0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...;o__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody></table>
+
+Note: Please save your abundance data as `tsv` files, `csv` or `xls` is not currently supported.
 
 ## License
 
