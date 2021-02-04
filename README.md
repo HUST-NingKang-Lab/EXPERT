@@ -35,8 +35,8 @@ bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 You can simply install EXPERT using `pip` package manager.
 
 ```bash
-$ pip install expert-mst    # Install EXPERT
-$ expert init               # Initialize EXPERT and install NCBI taxonomy database
+pip install expert-mst    # Install EXPERT
+expert init               # Initialize EXPERT and install NCBI taxonomy database
 ```
 
 ## Quick start
@@ -44,13 +44,13 @@ $ expert init               # Initialize EXPERT and install NCBI taxonomy databa
 Convert input abundance data to model-acceptable ` hdf` file.
 
 ```bash
-$ expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
+expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
 ```
 
 Source track microbial communities. Here you can specify an EXPERT model for the source tracking.  We have provided our general model, human model and disease model (refer to our [original study](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) for details).
 
 ```bash
-$ expert search -i countMatrix.h5 -o searchResult -m model
+expert search -i countMatrix.h5 -o searchResult -m model
 ```
 
 ## Advanced usage
