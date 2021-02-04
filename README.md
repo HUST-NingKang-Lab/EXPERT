@@ -14,14 +14,14 @@ For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-L
 
 This is our beta version, any comments or insights would be greatly appreciated. 
 
-## Current features
+## Features
 
-- Context-aware ability to adapt to microbiome studies via **transfer learning**
-- Fast, accurate and interpretable source tracking via **ontology-aware forward propagation**
-- Supports both **amplicon sequencing** and **whole-genome sequencing** data. 
-- Selective learning from partially-labeled training data
-- Ultra-fast data cleaning & cleaning via in-memory NCBI taxonomy database
-- Parallelized feature encoding via `tensorflow.keras`
+1. Context-aware ability to adapt to microbiome studies via **transfer learning**
+2. Fast, accurate and interpretable source tracking via **ontology-aware forward propagation**
+3. Supports both **amplicon sequencing** and **whole-genome sequencing** data. 
+4. Selective learning from partially-labeled training data
+5. Ultra-fast data cleaning & cleaning via in-memory NCBI taxonomy database
+6. Parallelized feature encoding via `tensorflow.keras`
 
 ## Installation
 
