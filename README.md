@@ -6,6 +6,12 @@ Here, we introduce EXPERT, a scalable community-level microbial source tracking 
 
 Supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability), towards better understanding the dark matters in microbial community.
 
+## Support
+
+For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). This is our beta version, any comments or insights would be greatly appreciated. 
+
+## How-to-cite
+
 If you use EXPERT in a scientific publication, we would appreciate citations to the following paper:
 
 ```
@@ -14,11 +20,7 @@ Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Siche
 bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 ```
 
-### Support
-
-For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). This is our beta version, any comments or insights would be greatly appreciated. 
-
-### Current features
+## Current features
 
 - Context-aware ability to adapt to microbiome studies via **transfer learning**
 - Fast, accurate and interpretable source tracking via **ontology-aware forward propagation**
@@ -27,7 +29,7 @@ For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-L
 - Ultra-fast data cleaning & cleaning via in-memory NCBI taxonomy database
 - Parallelized feature encoding via `tensorflow.keras`
 
-### Installation
+## Installation
 
 You can simply install EXPERT using `pip` package manager.
 
@@ -36,7 +38,7 @@ pip install expert-mst    # Install EXPERT
 expert init               # Initialize EXPERT and install NCBI taxonomy database
 ```
 
-### Quick start
+## Quick start
 
 Convert input abundance data to model-acceptable ` hdf` file.
 
@@ -50,11 +52,11 @@ Source track microbial communities. Here you can specify an EXPERT model for the
 expert search -i countMatrix.h5 -o searchResult -m model
 ```
 
-### Advanced usage
+## Advanced usage
 
 EXPERT has enabled the adaptation to context-dependent studies, in which you can choose potential sources to be estimated. Please follow our [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
 
-### Input abundance data
+## Input abundance data
 
 EXPERT takes two kinds of **abundance data** as inputs. 
 
@@ -66,11 +68,11 @@ EXPERT takes two kinds of **abundance data** as inputs.
 
 <table><thead><tr><th>#SampleID</th><th>ERR1844510</th><th>ERR1844449</th><th>ERR1844450</th><th>ERR1844451</th></tr></thead><tbody><tr><td>sk__Archaea</td><td>1.0</td><td>17.0</td><td>8.0</td><td>16.0</td></tr><tr><td>sk__Archaea;k__;p__Crenarchaeota</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Euryarchaeota</td><td>8.0</td><td>2.0</td><td>3.0</td><td>1.0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...;o__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody></table>
 
-### License
+## License
 
 [![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
 
-### Maintainer
+## Maintainer
 
 |   Name    | Email                 | Organization                                                 |
 | :-------: | --------------------- | ------------------------------------------------------------ |
