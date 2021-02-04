@@ -12,16 +12,6 @@ For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-L
 
 This is our beta version, any comments or insights would be greatly appreciated. 
 
-## How-to-cite
-
-If you are using EXPERT in a scientific publication (or inspired by the approach), we would appreciate citations to the following paper:
-
-```
-Enabling technology for microbial source tracking based on transfer learning: From ontology-aware general knowledge to context-aware expert systems
-Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Sicheng Wu, Weihua Chen, Kang Ning
-bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
-```
-
 ## Current features
 
 - Context-aware ability to adapt to microbiome studies via **transfer learning**
@@ -60,19 +50,15 @@ EXPERT has enabled the adaptation to context-dependent studies, in which you can
 
 More functional show-cases can be found at [EXPERT-use-cases](https://github.com/HUST-NingKang-Lab/EXPERT-use-cases). 
 
-## Input abundance data
+## How-to-cite
 
-EXPERT takes two kinds of abundance data as inputs. 
+If you are using EXPERT in a scientific publication (or inspired by the approach), we would appreciate citations to the following paper:
 
-1. Taxonomic assignments result for a single sample (abundance table). The example shown below is obtained through amplicon sequencing. Note that here is a header "# Constructed from biom file" in the first line.
-
-<table><thead><tr><th colspan="3"># Constructed from biom file</th></tr></thead><tbody><tr><td># OTU ID</td><td>ERR1754760</td><td>taxonomy</td></tr><tr><td>207119</td><td>19.0</td><td>sk__Archaea</td></tr><tr><td>118090</td><td>45.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__;o__Nitrosopumilales;f__Nitro...</td></tr><tr><td>153156</td><td>38.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__;o__Nitrosopumilales;f__Nitro...</td></tr><tr><td>131704</td><td>1.0</td><td>sk__Archaea;k__;p__Thaumarchaeota;c__Nitrososphaeria;o__Nitrososp...</td></tr><tr><td>103181</td><td>5174.0</td><td>sk__Bacteria</td></tr><tr><td>157361</td><td>9.0</td><td>sk__Bacteria;k__;p__;c__;o__;f__;g__;s__agricultural_soil_bacterium_SC-I-11</td></tr></tbody></table>
-
-2. Taxonomic assignments result for multiple samples (count matrix)
-
-<table><thead><tr><th>#SampleID</th><th>ERR1844510</th><th>ERR1844449</th><th>ERR1844450</th><th>ERR1844451</th></tr></thead><tbody><tr><td>sk__Archaea</td><td>1.0</td><td>17.0</td><td>8.0</td><td>16.0</td></tr><tr><td>sk__Archaea;k__;p__Crenarchaeota</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Euryarchaeota</td><td>8.0</td><td>2.0</td><td>3.0</td><td>1.0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...;o__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody></table>
-
-Note: Please save your abundance data as `tsv` files, `csv` or `xls` is not currently supported.
+```
+Enabling technology for microbial source tracking based on transfer learning: From ontology-aware general knowledge to context-aware expert systems
+Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Sicheng Wu, Weihua Chen, Kang Ning
+bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
+```
 
 ## License
 
