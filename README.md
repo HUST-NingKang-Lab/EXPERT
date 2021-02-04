@@ -1,6 +1,6 @@
 # EXPERT - a scalable model for quantifying source contributions for microbial communities
 
-Challenges remain to be addressed in terms of quantifying source origins for microbiome samples in an ultrafast, comprehensive, and context-aware manner. Traditional approaches to such quantification have severe trade-offs between efficiency, accuracy, and scalability. 
+Challenges remain to be addressed in terms of quantifying source origins for microbiome samples in a fast, comprehensive, and context-aware manner. Traditional approaches to such quantification have severe trade-offs between efficiency, accuracy, and scalability. 
 
 Here, we introduce EXPERT, a scalable community-level microbial source tracking approach. Built upon the biome ontology information and transfer learning techniques, EXPERT has acquired the context-aware flexibility and could easily expand the supervised model's search scope to include the context-dependent community samples and understudied biomes. While at the same time, it is superior to current approaches in source tracking accuracy and speed. EXPERT's superiority has been demonstrated on multiple source tracking tasks, including source tracking samples collected at different disease stages and longitudinal samples. For details refer to our [original study](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1). 
 
@@ -14,20 +14,20 @@ Hui Chong, Qingyang Yu, Yuguo Zha, Guangzhou Xiong, Nan Wang, Chuqing Sun, Siche
 bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 ```
 
-This is our beta version, any comments or insights would be greatly appreciated. 
+### Support
 
-For support using EXPERT, feel free to [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). Thank you for using EXPERT.
+For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). This is our beta version, any comments or insights would be greatly appreciated. 
 
-## Current features
+### Current features
 
 - Context-aware ability to adapt to microbiome studies via **transfer learning**
 - Fast, accurate and interpretable source tracking via **ontology-aware forward propagation**
 - Supports both **amplicon sequencing** and **whole-genome sequencing** data. 
-- Selective learning from training data
+- Selective learning from partially-labeled training data
 - Ultra-fast data cleaning & cleaning via in-memory NCBI taxonomy database
 - Parallelized feature encoding via `tensorflow.keras`
 
-## Installation
+### Installation
 
 You can simply install EXPERT using `pip` package manager.
 
@@ -36,7 +36,7 @@ pip install expert-mst    # Install EXPERT
 expert init               # Initialize EXPERT and install NCBI taxonomy database
 ```
 
-## Quick start
+### Quick start
 
 Convert input abundance data to model-acceptable ` hdf` file.
 
@@ -50,11 +50,11 @@ Source track microbial communities. Here you can specify an EXPERT model for the
 expert search -i countMatrix.h5 -o searchResult -m model
 ```
 
-## Advanced usage
+### Advanced usage
 
 EXPERT has enabled the adaptation to context-dependent studies, in which you can choose potential sources to be estimated. Please follow our [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
 
-## Input abundance data
+### Input abundance data
 
 EXPERT takes two kinds of **abundance data** as inputs. 
 
@@ -66,11 +66,11 @@ EXPERT takes two kinds of **abundance data** as inputs.
 
 <table><thead><tr><th>#SampleID</th><th>ERR1844510</th><th>ERR1844449</th><th>ERR1844450</th><th>ERR1844451</th></tr></thead><tbody><tr><td>sk__Archaea</td><td>1.0</td><td>17.0</td><td>8.0</td><td>16.0</td></tr><tr><td>sk__Archaea;k__;p__Crenarchaeota</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Euryarchaeota</td><td>8.0</td><td>2.0</td><td>3.0</td><td>1.0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>sk__Archaea;k__;p__Eury...;c__...;o__...</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody></table>
 
-## License
+### License
 
 [![](https://award.dovolopor.com?lt=License&rt=MIT&rbc=green)](./LICENSE)
 
-## Maintainer
+### Maintainer
 
 |   Name    | Email                 | Organization                                                 |
 | :-------: | --------------------- | ------------------------------------------------------------ |
