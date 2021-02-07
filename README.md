@@ -54,11 +54,11 @@ More functional show-cases can be found at [EXPERT-use-cases](https://github.com
 
 ## Model resources
 
-| Model         | Biome ontology                                               | Top-level biome  | Data source                                   | Dataset size | Download link                                                | Note                                                   |
-| ------------- | ------------------------------------------------------------ | ---------------- | --------------------------------------------- | ------------ | ------------------------------------------------------------ | ------------------------------------------------------ |
-| general model | biome ontology for 132 biomes around earth (as of Jan. 2020) | root             | [MGnify](https://www.ebi.ac.uk/metagenomics/) | 115,892      | [download](https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/general_model.tgz) | The samples were **not** uniformly processed by MGnify |
-| human model   | biome ontology for 27 human-associated biomes                | human            | [MGnify](https://www.ebi.ac.uk/metagenomics/) | 52,537       | [download](https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/human_model.tgz) | The samples were **not** uniformly processed by MGnify |
-| disease model | biome ontology for 20 human disease-associated biomes        | root (human gut) | [GMrepo](https://gmrepo.humangut.info/home)   | 13,642       | [download](https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/disease_model.tgz) | The samples were uniformly processed by GMrepo         |
+| Model         | Biome ontology                                           | Top-level biome  | Data source                                   | Dataset size | Download link                                                | Note                                                   |
+| ------------- | -------------------------------------------------------- | ---------------- | --------------------------------------------- | ------------ | ------------------------------------------------------------ | ------------------------------------------------------ |
+| general model | biome ontology for 132 biomes on earth (as of Jan. 2020) | root             | [MGnify](https://www.ebi.ac.uk/metagenomics/) | 115,892      | [download](https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/general_model.tgz) | The samples were **not** uniformly processed by MGnify |
+| human model   | biome ontology for 27 human-associated biomes            | human            | [MGnify](https://www.ebi.ac.uk/metagenomics/) | 52,537       | [download](https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/human_model.tgz) | The samples were **not** uniformly processed by MGnify |
+| disease model | biome ontology for 20 human disease-associated biomes    | root (human gut) | [GMrepo](https://gmrepo.humangut.info/home)   | 13,642       | [download](https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/disease_model.tgz) | The samples were uniformly processed by GMrepo         |
 
 Note: These models were trained on EXPERT version 0.2.
 
