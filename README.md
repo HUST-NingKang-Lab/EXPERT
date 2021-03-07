@@ -8,6 +8,10 @@ Here, we introduce EXPERT, a scalable community-level microbial source tracking 
 
 Supervised learning (with high efficiency and accuracy) meets transfer learning (with inherent high scalability), towards better understanding the dark matters in microbial community.
 
+![](https://github.com/HUST-NingKang-Lab/EXPERT/raw/master/docs/materials/transfer.svg)
+
+
+
 ## Support
 
 For support using EXPERT, please [contact us](https://github.com/HUST-NingKang-Lab/EXPERT#maintainer). 
