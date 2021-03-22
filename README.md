@@ -40,14 +40,15 @@ Here we quickly go-through basic functionalities of EXPERT through a case study,
 
 #### Things to know before starting
 
-EXPERT's fantastic function is its automatic generalization of fundamental models, which allows non-deep-learning users to modify the models just in terminal, without the need of any programming skill. Here we need to generalize a fundamental model (the disease model trained for quantifying contributions from hosts with different disease-associated biomes, refer to our preprint for details) for monitoring the progression of colorectal cancer (CRC). 
+1. EXPERT's fantastic function is its automatic generalization of fundamental models, which allows non-deep-learning users to modify the models just in terminal, without the need of any programming skill. Here we generalize a fundamental model for monitoring the progression of colorectal cancer (CRC) and assess the performance of the generalized model. We only use the disease model trained for quantifying contribution from hosts with different disease-associated biomes (refer to our preprint for details).
 
-- microbial source tracking
-- cross-validation
+2. Microbial source tracking: [Bayesian community-wide culture-independent microbial source tracking | Nature Methods](https://www.nature.com/articles/nmeth.1650)
 
-Please follow our instructions below and make sure all these commands were run on Linux/Mac OSX platform. You may also need to [install Anaconda](https://docs.anaconda.com/anaconda/install/) before we start. 
+3. Cross-validation: [Cross-validation (statistics) - Wikipedia](https://en.wikipedia.org/wiki/Cross-validation_(statistics))
 
 #### Get prepared
+
+Please follow our instructions below and make sure all these commands were run on Linux/Mac OSX platform. You may also need to [install Anaconda](https://docs.anaconda.com/anaconda/install/) before starting. 
 
 - Install expert-mst version 0.2 (suggested).
 
