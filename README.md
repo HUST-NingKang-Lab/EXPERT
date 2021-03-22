@@ -42,7 +42,8 @@ Here we quickly go-through basic functionalities of EXPERT through a case study,
 
 EXPERT's fantastic function is its automatic generalization of fundamental models, which allows non-deep-learning users to modify the models just in terminal, without the need of any programming skill. Here we need to generalize a fundamental model (the disease model trained for quantifying contributions from hosts with different disease-associated biomes, refer to our preprint for details) for monitoring the progression of colorectal cancer (CRC). 
 
-- microbial source tracking, cross-validation, 
+- microbial source tracking
+- cross-validation
 
 Please follow our instructions below and make sure all these commands were run on Linux/Mac OSX platform. You may also need to [install Anaconda](https://docs.anaconda.com/anaconda/install/) before we start. 
 
@@ -52,21 +53,17 @@ Please follow our instructions below and make sure all these commands were run o
 
 ```bash
 pip install https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2/expert-0.2_cpu-py3-none-any.whl
+expert init
 ```
 
 - Download the fundamental model and dataset to be used. Here `CM` is a abbreviation term of `countMatrix`, which is a format of abundance data (each row represents a taxon, and each column represents a sample/run). `Mapper` is another important input of EXPERT, which records source biomes for input samples.
 
 ```bash
 wget -c https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/disease_model.tgz
+tar zxvf disease_model.tgz  # Decompress the fundamental model.
 for file in {QueryCM.tsv,SourceCM.tsv,QueryMapper.csv,SourceMapper.csv}; do 
 	wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/$file;
 done
-```
-
-- Decompress the fundamental model.
-
-```bash
-tar zxvf disease_model.tgz
 ```
 
 #### Preprocess the dataset
@@ -113,6 +110,8 @@ expert search -i QueryCM.h5 -m CRC_model -o quantified_source_contributions
 expert evaluate -i quantified_source_contributions -l QueryLabels.h5 -o performance_report
 cat performance_report/overall.csv
 ```
+
+You now have acquired skills of EXPERT modeling for microbial source tracking. Next, you may want to explore a question: Which fundamental model gives the best performance on the CRC monitoring? You may want to assess the performance utilizing another fundamental model. Good luck.
 
 ## Advanced usage
 
