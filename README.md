@@ -38,11 +38,15 @@ expert init               # Initialize EXPERT and install NCBI taxonomy database
 
 Here we quickly go-through basic functionalities of EXPERT through a case study, which have already been conducted in our preprinted [paper](https://doi.org/10.1101/2021.01.29.428751). We also provided more functional show-cases in another [repository](https://github.com/HUST-NingKang-Lab/EXPERT-use-cases). 
 
+#### Things to know before starting
+
 EXPERT's fantastic function is its automatic generalization of fundamental models, which allows non-deep-learning users to modify the models just in terminal, without the need of any programming skill. Here we need to generalize a fundamental model (the disease model trained for quantifying contributions from hosts with different disease-associated biomes, refer to our preprint for details) for monitoring the progression of colorectal cancer (CRC). 
 
-Please follow our instructions below and make sure all these commands run on Linux/Mac OSX platform. You may also need to [install Anaconda](https://docs.anaconda.com/anaconda/install/) before we start. 
+- microbial source tracking, cross-validation, 
 
-##### Acquire necessary software & data.
+Please follow our instructions below and make sure all these commands were run on Linux/Mac OSX platform. You may also need to [install Anaconda](https://docs.anaconda.com/anaconda/install/) before we start. 
+
+#### Get prepared
 
 - Install expert-mst version 0.2 (suggested).
 
@@ -50,14 +54,13 @@ Please follow our instructions below and make sure all these commands run on Lin
 pip install https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2/expert-0.2_cpu-py3-none-any.whl
 ```
 
-- Download the fundamental model and dataset to be used.
+- Download the fundamental model and dataset to be used. Here `CM` is a abbreviation term of `countMatrix`, which is a format of abundance data (each row represents a taxon, and each column represents a sample/run). `Mapper` is another important input of EXPERT, which records source biomes for input samples.
 
 ```bash
 wget -c https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/disease_model.tgz
-wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/QueryCM.tsv
-wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/SourceCM.tsv
-wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/QueryMapper.csv
-wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/SourceMapper.csv
+for file in {QueryCM.tsv,SourceCM.tsv,QueryMapper.csv,SourceMapper.csv}; do 
+	wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/$file;
+done
 ```
 
 - Decompress the fundamental model.
@@ -66,23 +69,23 @@ wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/S
 tar zxvf disease_model.tgz
 ```
 
-##### Preprocess the dataset.
+#### Preprocess the dataset
 
-- Construct
+- Construct a biome ontology representing stages of CRC. You'll see constructed ontology like a tree in the printed message.
 
 ```bash
 grep -v "Env" SourceMapper.csv | awk -F ',' '{print $3}' | sort | uniq > microbiomes.txt
 expert construct -i microbiome.txt -o ontology.pkl
 ```
 
-- Map
+- Map microbial community samples to the biome ontology to obtain hierarchical labels. You'll see counts of the samples on each biome ontology layer in the printed message.
 
 ```bash
 expert map --to-otlg -i SourceMapper.csv -t ontology.pkl -o SourceLabels.h5
 expert map --to-otlg -i QueryMapper.csv -t ontology.pkl -o QueryLabels.h5
 ```
 
-- Convert input abundance data to model-acceptable `hdf` file.
+- Convert input abundance data to model-acceptable `hdf` file. The EXPERT model only accepts standardized abundance data. Here we standardize the abundance data using `convert` mode.
 
 ```bash
 ls SourceCM.tsv > inputList; expert convert -i inputList -o SourceCM.h5 --in-cm;
@@ -90,21 +93,21 @@ ls QueryCM.tsv > inputList; expert convert -i inputList -o QueryCM.h5 --in-cm;
 rm inputList
 ```
 
-##### Knowledge transfer from the disease model to the monitoring of CRC.
+#### Modeling and evaluation
 
-- transfer
+- Transfer knowledge about disease (from the disease model) to the CRC model, for a better performance on the CRC monitoring. You'll see running log and training process in the printed message.
 
 ```bash
-expert transfer -i SourceCM.h5 -t SourceLabels.h5 -t ontology.pkl -m disase_model -o CRC_model
+expert transfer -i SourceCM.h5 -l SourceLabels.h5 -t ontology.pkl -m disase_model -o CRC_model
 ```
 
-- search
+- Search the query samples against the model. 
 
 ```bash
 expert search -i QueryCM.h5 -m CRC_model -o quantified_source_contributions
 ```
 
-- evaluate
+- Evaluate the performance of the CRC model. You'll obtain a performance report on each stage of CRC.
 
 ```bash
 expert evaluate -i quantified_source_contributions -l QueryLabels.h5 -o performance_report
