@@ -36,23 +36,84 @@ expert init               # Initialize EXPERT and install NCBI taxonomy database
 
 ## Quick start
 
-Convert input abundance data to model-acceptable ` hdf` file.
+Here we quickly go-through basic functionalities of EXPERT through a case study, which have already been conducted in our preprinted [paper](https://doi.org/10.1101/2021.01.29.428751). We also provided more functional show-cases in another [repository](https://github.com/HUST-NingKang-Lab/EXPERT-use-cases). 
+
+EXPERT's fantastic function is its automatic generalization of fundamental models, which allows non-deep-learning users to modify the models just in terminal, without the need of any programming skill. Here we need to generalize a fundamental model (the disease model trained for quantifying contributions from hosts with different disease-associated biomes, refer to our preprint for details) for monitoring the progression of colorectal cancer (CRC). 
+
+Please follow our instructions below and make sure all these commands run on Linux/Mac OSX platform. You may also need to [install Anaconda](https://docs.anaconda.com/anaconda/install/) before we start. 
+
+##### Acquire necessary software & data.
+
+- Install expert-mst version 0.2 (suggested).
 
 ```bash
-expert convert -i countMatrices.txt -o countMatrix.h5 --in-cm
+pip install https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2/expert-0.2_cpu-py3-none-any.whl
 ```
 
-Source track microbial communities. Here you can specify an EXPERT model for the source tracking.  We have provided our general model, human model and disease model (refer to our [original study](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) for details).
+- Download the fundamental model and dataset to be used.
 
 ```bash
-expert search -i countMatrix.h5 -o searchResult -m model
+wget -c https://github.com/HUST-NingKang-Lab/EXPERT/releases/download/v0.2-m/disease_model.tgz
+wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/QueryCM.tsv
+wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/SourceCM.tsv
+wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/QueryMapper.csv
+wget -c https://raw.githubusercontent.com/HUST-NingKang-Lab/EXPERT/master/data/SourceMapper.csv
+```
+
+- Decompress the fundamental model.
+
+```bash
+tar zxvf disease_model.tgz
+```
+
+##### Preprocess the dataset.
+
+- Construct
+
+```bash
+grep -v "Env" SourceMapper.csv | awk -F ',' '{print $3}' | sort | uniq > microbiomes.txt
+expert construct -i microbiome.txt -o ontology.pkl
+```
+
+- Map
+
+```bash
+expert map --to-otlg -i SourceMapper.csv -t ontology.pkl -o SourceLabels.h5
+expert map --to-otlg -i QueryMapper.csv -t ontology.pkl -o QueryLabels.h5
+```
+
+- Convert input abundance data to model-acceptable `hdf` file.
+
+```bash
+ls SourceCM.tsv > inputList; expert convert -i inputList -o SourceCM.h5 --in-cm;
+ls QueryCM.tsv > inputList; expert convert -i inputList -o QueryCM.h5 --in-cm;
+rm inputList
+```
+
+##### Knowledge transfer from the disease model to the monitoring of CRC.
+
+- transfer
+
+```bash
+expert transfer -i SourceCM.h5 -t SourceLabels.h5 -t ontology.pkl -m disase_model -o CRC_model
+```
+
+- search
+
+```bash
+expert search -i QueryCM.h5 -m CRC_model -o quantified_source_contributions
+```
+
+- evaluate
+
+```bash
+expert evaluate -i quantified_source_contributions -l QueryLabels.h5 -o performance_report
+cat performance_report/overall.csv
 ```
 
 ## Advanced usage
 
 EXPERT has enabled the adaptation to context-dependent studies, in which you can choose potential sources to be estimated. Please follow our [documentation: advanced usage](https://github.com/HUST-NingKang-Lab/EXPERT/wiki/advanced-usage).
-
-More functional show-cases can be found at [EXPERT-use-cases](https://github.com/HUST-NingKang-Lab/EXPERT-use-cases). 
 
 ## Model resources
 
