@@ -72,8 +72,8 @@ done
 - Construct a biome ontology representing stages of CRC. You'll see constructed ontology like a tree in the printed message.
 
 ```bash
-grep -v "Env" SourceMapper.csv | awk -F ',' '{print $3}' | sort | uniq > microbiomes.txt
-expert construct -i microbiome.txt -o ontology.pkl
+grep -v "Env" SourceMapper.csv | awk -F ',' '{print $6}' | sort | uniq > microbiomes.txt
+expert construct -i microbiomes.txt -o ontology.pkl
 ```
 
 - Map microbial community samples to the biome ontology to obtain hierarchical labels. You'll see counts of the samples on each biome ontology layer in the printed message.
