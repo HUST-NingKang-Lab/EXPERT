@@ -96,7 +96,7 @@ rm inputList
 - Transfer knowledge about disease (from the disease model) to the CRC model, for a better performance on the CRC monitoring. You'll see running log and training process in the printed message.
 
 ```bash
-expert transfer -i SourceCM.h5 -l SourceLabels.h5 -t ontology.pkl -m disase_model -o CRC_model
+expert transfer -i SourceCM.h5 -l SourceLabels.h5 -t ontology.pkl -m disease_model -o CRC_model
 ```
 
 - Search the query samples against the model. 
