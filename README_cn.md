@@ -1,5 +1,7 @@
 # EXPERT——一种用于量化源对微生物群落贡献的可扩展模型
 
+[![](https://img.shields.io/badge/PyPI-v0.3-blue?style=flat-square&logo=appveyor)](https://pypi.org/project/expert-mst/) ![](https://img.shields.io/badge/status-beta-yellow?style=flat-square&logo=appveyor) [![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat-square&logo=appveyor)](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) ![](https://img.shields.io/github/license/HUST-NingKang-Lab/EXPERT?style=flat-square&logo=appveyor) [![](https://img.shields.io/badge/support-huichong.me@gmail.com-blue?style=flat-square&logo=appveyor)](mailto:huichong.me@gmail.com) [![](https://img.shields.io/badge/README-EN-green?style=flat-square&logo=appveyor)](https://github.com/HUST-NingKang-Lab/EXPERT/blob/master/README.md)
+
 在以快速、全面和上下文感知的方式对微生物组样本的来源进行量化方面仍然存在挑战。这种量化的传统方法在效率、准确性和可伸缩性之间不能权衡。
 
 EXPERT，一个可扩展的社区级微生物溯源方法。基于生物群落本体信息和迁移学习技术，EXPERT能灵活地的感知上下文，可以很容易地扩展监督模型的搜索范围，包括上下文相关的群落样本和待研究的生物群落。同时，它在溯源的准确度和速度上都优于现有的方法。EXPERT的优势已经在多个溯源任务上得到了证明，包括纵向样本和在不同疾病阶段收集的溯源样本。详情请参考我们[最初研究](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1)。
