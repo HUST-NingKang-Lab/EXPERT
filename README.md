@@ -143,4 +143,5 @@ bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 |   Name    | Email                 | Organization                                                 |
 | :-------: | --------------------- | ------------------------------------------------------------ |
 | Hui Chong | huichong.me@gmail.com | Research Assistant, School of Life Science and Technology, Huazhong University of Science & Technology |
+|Shijuan Huang|hshijuan@qq.com      | undergraduate,School of Life Science and Technology, Huazhong University of Science & Technology|
 | Kang Ning | ningkang@hust.edu.cn  | Professor, School of Life Science and Technology, Huazhong University of Science & Technology |

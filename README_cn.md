@@ -8,7 +8,7 @@ EXPERT，一个可扩展的社区级微生物溯源方法。基于生物群落�
 
 
 
-![迁移学习](E:\education\project\transfer.png)
+![迁移学习](https://github.com/HUST-NingKang-Lab/EXPERT/raw/master/docs/materials/transfer.png)
 
 
 
@@ -157,6 +157,7 @@ bioRxiv 2021.01.29.428751; doi: https://doi.org/10.1101/2021.01.29.428751
 | 姓名 |                       电子邮件                        |                所属机构                |
 | :--: | :---------------------------------------------------: | :------------------------------------: |
 | 冲辉 | [huichong.me@gmail.com](mailto:huichong.me@gmail.com) | 华中科技大学生命科学与技术学院研究助理 |
+|黄士娟| [hshijuan@qq.com](mailto:hshijuan@qq.com)             | 华中科技大学生命科学与技术学院本科生   |
 | 宁康 |  [ningkang@hust.edu.cn](mailto:ningkang@hust.edu.cn)  |   华中科技大学生命科学与技术学院教授   |
 
 
