@@ -3,6 +3,7 @@ import os
 from configparser import ConfigParser
 import pkg_resources
 
+
 def set_seed(SEED):
 	os.environ['PYTHONHASHSEED'] = str(SEED)
 	from numpy.random import seed
@@ -25,7 +26,9 @@ def find_pkg_resource(path):
 
 
 def get_CLI_parser():
-	modes = ['init', 'download', 'map', 'construct', 'convert', 'select', 'train', 'transfer', 'evaluate', 'search']
+	modes = ['init', 'download', 'map', 'construct', 'convert',
+			 'select', 'train', 'transfer', 'evaluate', 'search',
+			 'format']
 	# noinspection PyTypeChecker
 	parser = argparse.ArgumentParser(
 		description=('The program is designed to help you to transfer Ontology-aware Neural Network model '
@@ -137,4 +140,8 @@ def get_CLI_parser():
 						help='The output format.')
 	search.add_argument('--measure-unknown', action='store_true',
 						help='Measure the contribution from unknown source.')
+
+	# ------------------------------------------------------------------------------------------------------------------
+	format = parser.add_argument_group(
+		title='format', description='Format source contribution to Krona format\n')
 	return parser
