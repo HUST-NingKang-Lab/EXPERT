@@ -1,6 +1,12 @@
 ## EXPERT - a scalable model for quantifying source contributions for microbial communities
 
-[![](https://img.shields.io/badge/PyPI-v0.3-blue?style=flat-square&logo=appveyor)](https://pypi.org/project/expert-mst/) ![](https://img.shields.io/badge/status-beta-yellow?style=flat-square&logo=appveyor) [![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat-square&logo=appveyor)](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) ![](https://img.shields.io/github/license/HUST-NingKang-Lab/EXPERT?style=flat-square&logo=appveyor) [![](https://img.shields.io/badge/support-huichong.me@gmail.com-blue?style=flat-square&logo=appveyor)](mailto:huichong.me@gmail.com) [![](https://img.shields.io/badge/README-CN-green?style=flat-square&logo=appveyor)](https://github.com/HUST-NingKang-Lab/EXPERT/blob/master/README_cn.md)
+[![](https://img.shields.io/badge/PyPI-v0.3-blue?style=flat&logo=appveyor)](https://pypi.org/project/expert-mst/) 
+[![Downloads](https://pepy.tech/badge/expert-mst)](https://pepy.tech/project/expert-mst)
+![](https://img.shields.io/badge/status-beta-yellow?style=flat&logo=appveyor) 
+[![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat&logo=appveyor)](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) 
+![](https://img.shields.io/github/license/HUST-NingKang-Lab/EXPERT?style=flat&logo=appveyor) 
+[![](https://img.shields.io/badge/support-huichong.me@gmail.com-blue?style=flat&logo=appveyor)](mailto:huichong.me@gmail.com) 
+[![](https://img.shields.io/badge/README-CN-green?style=flat&logo=appveyor)](https://github.com/HUST-NingKang-Lab/EXPERT/blob/master/README_cn.md) 
 
 Challenges remain to be addressed in terms of quantifying source origins for microbiome samples in a fast, comprehensive, and context-aware manner. Traditional approaches to such quantification have severe trade-offs between efficiency, accuracy, and scalability. 
 
