@@ -3,7 +3,7 @@
 [![](https://img.shields.io/badge/PyPI-v0.3-blue?style=flat)](https://pypi.org/project/expert-mst/) 
 [![Downloads](https://pepy.tech/badge/expert-mst)](https://pepy.tech/project/expert-mst)
 ![](https://img.shields.io/badge/status-beta-yellow?style=flat) 
-[![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat)](https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bbac396/6702669) 
+[![](https://img.shields.io/badge/DOI-10.1093/bib/bbac396-brightgreen?style=flat)](https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bbac396/6702669) 
 ![](https://img.shields.io/github/license/HUST-NingKang-Lab/EXPERT?style=flat) 
 [![](https://img.shields.io/badge/README-CN-green?style=flat)](https://github.com/HUST-NingKang-Lab/EXPERT/blob/master/README_cn.md) 
 
@@ -137,11 +137,7 @@ Note: These models were trained on EXPERT version 0.2.
 
 If you are using EXPERT in a scientific publication (or inspired by the approach), we would appreciate citations to the following paper:
 
-> EXPERT: Transfer Learning-enabled context-aware microbial source tracking
-> Hui Chong, Qingyang Yu,  Yuguo Zha, Guangzhou Xiong, Nan Wang, Xinhe Huang, 
-> Shijuan Huang, Chuqing Sun, Sicheng Wu, Wei-Hua Chen, Luis Pedro Coelho,  Kang Ning
-> bioRxiv 10.1101/2021.01.29.428751; doi:
-> [https://doi.org/10.1101/2021.01.29.428751](https://doi.org/10.1101/2021.01.29.428751)
+> Hui Chong, Yuguo Zha, Qingyang Yu, Mingyue Cheng, Guangzhou Xiong, Nan Wang, Xinhe Huang, Shijuan Huang, Chuqing Sun, Sicheng Wu, Wei-Hua Chen, Luis Pedro Coelho, Kang Ning*. EXPERT: transfer learning-enabled context-aware microbial community classification. Briefings in Bioinformatics, 2022; bbac396. doi:[10.1093/bib/bbac396](https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bbac396/6702669).
 
 ## Maintainer
 
