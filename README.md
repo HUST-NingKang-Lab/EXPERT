@@ -3,7 +3,7 @@
 [![](https://img.shields.io/badge/PyPI-v0.3-blue?style=flat)](https://pypi.org/project/expert-mst/) 
 [![Downloads](https://pepy.tech/badge/expert-mst)](https://pepy.tech/project/expert-mst)
 ![](https://img.shields.io/badge/status-beta-yellow?style=flat) 
-[![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat)](https://www.biorxiv.org/content/10.1101/2021.01.29.428751v1) 
+[![](https://img.shields.io/badge/DOI-10.1101/2021.01.29.428751-brightgreen?style=flat)](https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bbac396/6702669) 
 ![](https://img.shields.io/github/license/HUST-NingKang-Lab/EXPERT?style=flat) 
 [![](https://img.shields.io/badge/README-CN-green?style=flat)](https://github.com/HUST-NingKang-Lab/EXPERT/blob/master/README_cn.md) 
 
